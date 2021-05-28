@@ -47,3 +47,6 @@ Thumbs.db
 
 # SSL private key for user
 accessible_localhost.key
+
+# Generate artifacts
+docs/
