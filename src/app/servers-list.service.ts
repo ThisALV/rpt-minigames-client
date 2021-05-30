@@ -1,12 +1,11 @@
 import { Injectable } from '@angular/core';
 import { servers } from './servers.json';
-import { RptlProtocolService, RptlState } from 'rpt-webapp-client';
+import { Availability, RptlProtocolService, RptlState } from 'rpt-webapp-client';
 import { MonoTypeOperatorFunction, Observable, of, race, Subject } from 'rxjs';
 import { GameServerResolutionService } from './game-server-resolution.service';
 import { GameServer } from './game-server';
 import { RuntimeErrorsService } from './runtime-errors.service';
 import { delay, find } from 'rxjs/operators';
-import { Availability } from 'rpt-webapp-client/lib/availability';
 
 
 /**
