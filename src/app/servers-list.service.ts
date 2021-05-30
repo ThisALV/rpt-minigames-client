@@ -31,7 +31,7 @@ export class ServersListBusy extends Error {
 })
 export class ServersListService {
   private currentServer?: number; // Index of server which is currently waiting a status, if any
-  private serversStatus: Subject<GameServer[]>;
+  private readonly serversStatus: Subject<GameServer[]>;
 
   /**
    * Constructs a service which is not waiting for server status and without any retrieved status for now.
