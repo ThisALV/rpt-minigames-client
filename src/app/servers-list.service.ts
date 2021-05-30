@@ -131,6 +131,8 @@ export class ServersListService {
    * @param connection Stream required by underlying RPTL protocol to communicate with server
    * @param delayPipeOperator When the `Observable<undefined>` returned by this operator next a new `undefined` value, a server checkout
    * times out and the process go to the next server, considering current server as not working
+   *
+   * @throws ServersListBusy if another update operation is still running but no new array has been passed to subject yet
    */
   update(connection: ConnectionFactory, delayPipeOperator: MonoTypeOperatorFunction<undefined> = delay(500)): void {
     if (this.isUpdating()) { // Can't handle 2 recursive updates at the same time
