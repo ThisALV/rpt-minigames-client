@@ -45,6 +45,13 @@ export class MockedMessagingSubject extends Subject<string> {
   }
 
   /**
+   * Re-open subject after it has been closed by error() or complete(), has no effect if it is already open.
+   */
+  open(): void {
+    this.isStopped = false;
+  }
+
+  /**
    * Clear `sendMessagesQueue`, will be empty after this call.
    */
   clear(): void {
