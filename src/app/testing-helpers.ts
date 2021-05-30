@@ -34,13 +34,20 @@ export class MockedMessagingSubject extends Subject<string> {
   /**
    * Every `next()` method arguments stored here.
    */
-  readonly sentMessagesQueue: string[];
+  sentMessagesQueue: string[];
 
   /**
    * Constructs subject with no sent messages.
    */
   constructor() {
     super();
+    this.sentMessagesQueue = [];
+  }
+
+  /**
+   * Clear `sendMessagesQueue`, will be empty after this call.
+   */
+  clear(): void {
     this.sentMessagesQueue = [];
   }
 
