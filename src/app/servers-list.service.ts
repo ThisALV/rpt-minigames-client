@@ -4,7 +4,6 @@ import { RptlProtocolService, RptlState } from 'rpt-webapp-client';
 import { MonoTypeOperatorFunction, Observable, of, race, Subject } from 'rxjs';
 import { GameServerResolutionService } from './game-server-resolution.service';
 import { GameServer } from './game-server';
-import { rptlConnectionFor } from './game-server-connection';
 import { RuntimeErrorsService } from './runtime-errors.service';
 import { delay, find } from 'rxjs/operators';
 import { Availability } from 'rpt-webapp-client/lib/availability';
@@ -18,6 +17,12 @@ export class ServersListBusy extends Error {
     super('Already updating servers list');
   }
 }
+
+
+/**
+ * Used by `ServersListService.update()` to create connection with each server in the list using its URL and runtime errors handler
+ */
+export type ConnectionFactory = (currentServerUrl: string, errorsHandler: RuntimeErrorsService) => Subject<string>;
 
 
 /**
@@ -48,7 +53,10 @@ export class ServersListService {
   }
 
   // Called recursively and asynchronously while every server status hasn't been retrieved
-  private updateNext(delayPipeOperator: MonoTypeOperatorFunction<undefined>, updatedStatus: GameServer[] = []): void {
+  private updateNext(connection: ConnectionFactory,
+                     delayPipeOperator: MonoTypeOperatorFunction<undefined>,
+                     updatedStatus: GameServer[] = []): void
+  {
     // If every server status has been updated, marks update as done, pushes new status inside subject then stops async recursion
     if (this.currentServer === servers.length) {
       this.currentServer = undefined;
@@ -73,14 +81,15 @@ export class ServersListService {
           // Final server status after having tried to obtain status from server
           const definitiveServerData = new GameServer(currentServerData.name, currentServerData.game, serverStatus);
           // A new server status has been defined, go to next server
-          this.updateNext(delayPipeOperator, updatedStatus.concat(definitiveServerData));
+          this.updateNext(connection, delayPipeOperator, updatedStatus.concat(definitiveServerData));
         }
       });
 
       try { // Uncaught errors for current server must NOT block following servers to be tested
-        // Connects to evaluated game server URL, reporting any WS error through service errors handler
-        const serverConnection = rptlConnectionFor(currentServerUrl, this.runtimeErrors);
+        // Tries to connect to server parsing current URL connecting with user-provided facility
+        const serverConnection = connection(currentServerUrl, this.runtimeErrors);
 
+        // Connects to evaluated game server URL, reporting any WS error through service errors handler
         const context: ServersListService = this;
         // As soon as RPTL connection is done (not registered, just connected), begin CHECKOUT sending and response handling
         this.rptlProtocol.getState().pipe(find((newState: RptlState) => newState === RptlState.UNREGISTERED)).subscribe({
@@ -119,17 +128,18 @@ export class ServersListService {
    * Sends a CHECKOUT command and listen for STATUS response for each listed serve, one by one, then publish new servers status array
    * which can be obtained using `getListStatus()`.
    *
+   * @param connection Stream required by underlying RPTL protocol to communicate with server
    * @param delayPipeOperator When the `Observable<undefined>` returned by this operator next a new `undefined` value, a server checkout
    * times out and the process go to the next server, considering current server as not working
    */
-  update(delayPipeOperator: MonoTypeOperatorFunction<undefined> = delay(500)): void {
+  update(connection: ConnectionFactory, delayPipeOperator: MonoTypeOperatorFunction<undefined> = delay(500)): void {
     if (this.isUpdating()) { // Can't handle 2 recursive updates at the same time
       throw new ServersListBusy();
     }
 
     // Initializes servers status update
     this.currentServer = 0; // Beginning with the first server to be listed
-    this.updateNext(delayPipeOperator);
+    this.updateNext(connection, delayPipeOperator);
   }
 
   /**
