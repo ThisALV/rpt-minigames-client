@@ -94,13 +94,7 @@ describe('ServersListService', () => {
           provide: GameServerResolutionService,
           useValue: {
             // Window not available for testing: emulates case where protocol is https and hostname is localhost
-            resolve(port: number): string {
-              if (port === 35557) { // Emulates an error for the server Bermudes #1
-                throw new Error('Bad port');
-              }
-
-              return `wss://localhost:${port}/`;
-            }
+            resolve: (port: number): string => `wss://localhost:${port}/`
           }
         }
       ]
@@ -117,6 +111,9 @@ describe('ServersListService', () => {
     const connectedUrls = new Subject<string>(); // next() call with latest connected URL as argument
     const connections = mockedConnections(6); // Will allow to receive desired messages and to check for messages sent by service
     const delayTrigger = new Subject<undefined>(); // Call next() to time out delay for current server
+
+    // Emulates an error for the server Bermudes #1, as it makes connection be already closed before RPTL connection
+    connections[2].isStopped = true;
 
     let latestConnectedUrl: string | undefined; // Saves each connection URL for the subject to checks connection servers and order
     connectedUrls.subscribe({ next: (currentServerUrl: string) => latestConnectedUrl = currentServerUrl });
