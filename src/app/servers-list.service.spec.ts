@@ -49,20 +49,25 @@ function mockedDelay(trigger: Subject<undefined>): MonoTypeOperatorFunction<unde
 
 
 /**
- * @param latestConnectedUrl Every URL into which given subject `connection` connects to will be passed to that subject
+ * @param serverUrls Every connection inside `connections` will saves URL of mocked server into this array at the same index of current
+ * mocked connection
  * @param connections Queue of subjects returned, the next subject will be provided to for connection to the next server inside service
  * servers list
  */
-function mockedConnectionFactory(latestConnectedUrl: Subject<string>, connections: MockedMessagingSubject[]): ConnectionFactory {
+function mockedConnectionFactory(serverUrls: string[], connections: MockedMessagingSubject[]): ConnectionFactory {
   let currentConnection = 0;
 
   return (currentServerUrl: string): Subject<string> => {
     // Keep a trace of every server which the subject connects to
-    latestConnectedUrl.next(currentServerUrl);
+    serverUrls[currentConnection] = currentServerUrl;
+    // Provides current mocked connection subject
+    const providedMock = connections[currentConnection];
 
     // Go for the next subject to provide for connection mocking. RptlProtocolService requires different subjects so mocking with only
     // one subject doesn't work
-    return connections[currentConnection++];
+    currentConnection++;
+
+    return providedMock;
   };
 }
 
@@ -108,15 +113,12 @@ describe('ServersListService', () => {
   });
 
   it('should update every server that respond without errors and in time, others have undefined availability', () => {
-    const connectedUrls = new Subject<string>(); // next() call with latest connected URL as argument
+    const serverUrls: string[] = new Array<string>(6); // URL for each mocked connection will be saved here
     const connections = mockedConnections(6); // Will allow to receive desired messages and to check for messages sent by service
     const delayTrigger = new Subject<undefined>(); // Call next() to time out delay for current server
 
     // Emulates an error for the server Bermudes #1, as it makes connection be already closed before RPTL connection
     connections[2].isStopped = true;
-
-    let latestConnectedUrl: string | undefined; // Saves each connection URL for the subject to checks connection servers and order
-    connectedUrls.subscribe({ next: (currentServerUrl: string) => latestConnectedUrl = currentServerUrl });
 
     let receivedServersStatus: GameServer[] | undefined;
     service.getListStatus().subscribe({ // Allow to check for status retrieved by servers once service update is done
@@ -127,11 +129,11 @@ describe('ServersListService', () => {
 
     expect(service.isUpdating()).toBeFalse(); // update() not called yet
 
-    service.update(mockedConnectionFactory(connectedUrls, connections), mockedDelay(delayTrigger));
+    service.update(mockedConnectionFactory(serverUrls, connections), mockedDelay(delayTrigger));
     expect(service.isUpdating()).toBeTrue();
 
     // Checks for the 1st server: wss://localhost:35555/, Açores #1
-    expect(latestConnectedUrl).toEqual('wss://localhost:35555/');
+    expect(serverUrls[0]).toEqual('wss://localhost:35555/');
     expectArrayToBeEqual(connections[0].sentMessagesQueue, 'CHECKOUT');
     connections[0].receive('AVAILABILITY 0 2'); // Emulates STATUS response in the case of server with no players connected
 
@@ -140,27 +142,27 @@ describe('ServersListService', () => {
      */
 
     // Checks for the 2nd server: wss://localhost:35556/, Açores #2
-    expect(latestConnectedUrl).toEqual('wss://localhost:35556/');
+    expect(serverUrls[1]).toEqual('wss://localhost:35556/');
     expectArrayToBeEqual(connections[1].sentMessagesQueue, 'CHECKOUT');
     delayTrigger.next(); // But response is received after time out...
     connections[1].receive('AVAILABILITY 0 2'); // ...it will be ignored
 
     // Checks for the 3rd server: wss://localhost:35557/, Bermudes #1
-    expect(latestConnectedUrl).toEqual('wss://localhost:35557/');
+    expect(serverUrls[2]).toEqual('wss://localhost:35557/');
     expectArrayToBeEqual(connections[2].sentMessagesQueue); // Connection failed, no CHECKOUT could have been sent
 
     // Checks for the 4th server: wss://localhost:35558/, Bermudes #2
-    expect(latestConnectedUrl).toEqual('wss://localhost:35558/');
+    expect(serverUrls[3]).toEqual('wss://localhost:35558/');
     expectArrayToBeEqual(connections[3].sentMessagesQueue, 'CHECKOUT');
     connections[3].receive('AVAILABILITY 2 2');
 
     // Checks for the 5th server: wss://localhost:35559/, Canaries #1
-    expect(latestConnectedUrl).toEqual('wss://localhost:35559/');
+    expect(serverUrls[4]).toEqual('wss://localhost:35559/');
     expectArrayToBeEqual(connections[4].sentMessagesQueue, 'CHECKOUT');
     connections[4].receive('AVAILABILITY 1 2');
 
     // Checks for the 6th server: wss://localhost:35560/, Canaries #2
-    expect(latestConnectedUrl).toEqual('wss://localhost:35560/');
+    expect(serverUrls[5]).toEqual('wss://localhost:35560/');
     expectArrayToBeEqual(connections[5].sentMessagesQueue, 'CHECKOUT');
     connections[5].receive('I AM ERROR'); // Will not be able to handle this, connection will be closed
 
@@ -181,9 +183,9 @@ describe('ServersListService', () => {
 
   it('should not be able to update concurrently', () => {
     // Starts a 1st update, params doesn't matter we just test if it is not possible to call it twice
-    service.update(mockedConnectionFactory(new Subject<string>(), mockedConnections(6)));
+    service.update(mockedConnectionFactory(new Array<string>(6), mockedConnections(6)));
     // Try a concurrent update while the other one is certainly still waiting for a server response
-    expect(() => service.update(mockedConnectionFactory(new Subject<string>(), mockedConnections(6))))
+    expect(() => service.update(mockedConnectionFactory(new Array<string>(6), mockedConnections(6))))
       .toThrowError(ServersListBusy);
   });
 });
