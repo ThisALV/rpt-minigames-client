@@ -93,6 +93,11 @@ export class ServersListService {
         // As soon as RPTL connection is done (not registered, just connected), begin CHECKOUT sending and response handling
         this.rptlProtocol.getState().pipe(find((newState: RptlState) => newState === RptlState.UNREGISTERED)).subscribe({
           next(): void {
+            // Now we're sure that we are connected to server and that beginSession() call succeeded, we can listen for server
+            // disconnection to avoid waiting delay expiration if connection is closed for whatever reason
+            context.rptlProtocol.getState().pipe(find((newState: RptlState) => newState === RptlState.DISCONNECTED))
+              .subscribe({ next: () => retrievedStatus.next() });
+
             // As soon as STATUS command is received as a response, pushes value into retrieved status
             context.rptlProtocol.getStatus().subscribe({
               next: (serverStatus: Availability) => retrievedStatus.next(serverStatus)
