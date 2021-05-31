@@ -5,7 +5,7 @@ import { MonoTypeOperatorFunction, Observable, of, race, Subject } from 'rxjs';
 import { GameServerResolutionService } from './game-server-resolution.service';
 import { GameServer } from './game-server';
 import { RuntimeErrorsService } from './runtime-errors.service';
-import { delay, find } from 'rxjs/operators';
+import { delay, filter, first } from 'rxjs/operators';
 
 
 /**
@@ -91,12 +91,17 @@ export class ServersListService {
         // Connects to evaluated game server URL, reporting any WS error through service errors handler
         const context: ServersListService = this;
         // As soon as RPTL connection is done (not registered, just connected), begin CHECKOUT sending and response handling
-        this.rptlProtocol.getState().pipe(find((newState: RptlState) => newState === RptlState.UNREGISTERED)).subscribe({
+        this.rptlProtocol.getState().pipe(first(), filter(
+          (newState: RptlState) => newState === RptlState.UNREGISTERED)
+        ).subscribe({
           next(): void {
             // Now we're sure that we are connected to server and that beginSession() call succeeded, we can listen for server
             // disconnection to avoid waiting delay expiration if connection is closed for whatever reason
-            context.rptlProtocol.getState().pipe(find((newState: RptlState) => newState === RptlState.DISCONNECTED))
-              .subscribe({ next: () => retrievedStatus.next() });
+            context.rptlProtocol.getState().pipe(first(), filter(
+              (newState: RptlState) => newState === RptlState.DISCONNECTED)
+            ).subscribe({
+              next: () => retrievedStatus.next()
+            });
 
             // As soon as STATUS command is received as a response, pushes value into retrieved status
             context.rptlProtocol.getStatus().subscribe({
