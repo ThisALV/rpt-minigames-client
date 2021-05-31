@@ -95,17 +95,26 @@ export class ServersListService {
           (newState: RptlState) => newState === RptlState.UNREGISTERED)
         ).subscribe({
           next(): void {
+            let statusRetrieved = false;
+
             // Now we're sure that we are connected to server and that beginSession() call succeeded, we can listen for server
-            // disconnection to avoid waiting delay expiration if connection is closed for whatever reason
+            // disconnection to avoid waiting delay expiration if connection is closed for whatever reason BEFORE status was retrieved
             context.rptlProtocol.getState().pipe(first(), filter(
               (newState: RptlState) => newState === RptlState.DISCONNECTED)
             ).subscribe({
-              next: () => retrievedStatus.next()
+              next(): void {
+                if (!statusRetrieved) { // It's normal that connection is closed after status was retrieved
+                  retrievedStatus.next();
+                }
+              }
             });
 
             // As soon as STATUS command is received as a response, pushes value into retrieved status
             context.rptlProtocol.getStatus().subscribe({
-              next: (serverStatus: Availability) => retrievedStatus.next(serverStatus)
+              next(serverStatus: Availability): void {
+                statusRetrieved = true; // Expects a RPTL disconnection from server since now
+                retrievedStatus.next(serverStatus);
+              }
             });
 
             // Sends the CHECKOUT command to get a STATUS command as a response
