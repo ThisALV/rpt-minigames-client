@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BadRptlMode, RptlProtocolService, RptlState } from 'rpt-webapp-client';
+import { Actor, BadRptlMode, RptlProtocolService, RptlState } from 'rpt-webapp-client';
 
 
 /**
@@ -54,6 +54,18 @@ export class ActorsNameService {
   // value
   private makeAvailable(): void {
     this.actorsNameRegistry = {};
+
+    const context: ActorsNameService = this;
+    this.rptlProtocol.getActors().subscribe({
+      next(updatedActorsList: Actor[]): void {
+        context.actorsNameRegistry = {}; // Resets list to initialize DB actor by actor
+
+        for (const actor of updatedActorsList) { // Actor by actor, associate UID with appropriate name
+          context.actorsNameRegistry[actor.uid] = actor.name;
+        }
+      }
+    });
+
     this.rptlProtocol.updateActorsSubscribable();
   }
 
