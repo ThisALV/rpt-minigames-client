@@ -122,21 +122,26 @@ export class ServersListService {
       });
 
       // Will emits if catch block is executed
-      const errorOccurred = new Subject<undefined>();
+      const errorOccurred = new Subject<boolean>();
       try { // Uncaught errors for current server must NOT block following servers to be tested
         // Tries to connect to server parsing current URL connecting with user-provided facility
         const serverConnection = connection(currentServerUrl, this.runtimeErrors);
 
-        // Will emits without value which doesn't matter here as soon as RPTL connection is done
-        const connectionDone: Observable<undefined> = this.rptlProtocol.getState().pipe(first(), filter(
+        // Will emits true informing us that connect operation succeeded as soon as RPTL connection is done
+        const connectionDone: Observable<boolean> = this.rptlProtocol.getState().pipe(first(), filter(
           (newState: RptlState) => newState === RptlState.UNREGISTERED
-          ), mapTo(undefined)
+          ), mapTo(true)
         );
 
         const context: ServersListService = this;
         // If an error is thrown before connection has been done, we must not be waiting for another RPTL connection
         race(errorOccurred, connectionDone).subscribe({
-          next(): void {
+          next(connected: boolean): void {
+            if (!connected) { // Checks for which observable emitted the first, if it is errorOccurred, then we cannot obtain status
+              retrievedStatus.next(undefined);
+              return;
+            }
+
             // If disconnected before AVAILABILITY command is received, then status observable is errored or completed so status is
             // undefined because it hasn't been received
             context.rptlProtocol.getStatus().pipe(firstCallback).subscribe({
@@ -152,16 +157,13 @@ export class ServersListService {
 
         this.rptlProtocol.beginSession(serverConnection);
       } catch (err: any) {
-        // Notifies an error has been thrown to avoid being still waiting for RPTL connection after function exits
-        errorOccurred.next();
-
         // Logs uncaught error
         this.runtimeErrors.throwError(err.message);
         console.error(err);
 
-        // Manually stops waiting for a response, ensures that race subscriber next() callback is called, so we can put connection close
-        // code there
-        retrievedStatus.next(undefined);
+        // Notifies an error has been thrown to avoid being still waiting for RPTL connection after function exits and considers status
+        // as undefined for current server
+        errorOccurred.next(false);
       }
     }
   }
