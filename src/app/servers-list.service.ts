@@ -5,7 +5,7 @@ import { MonoTypeOperatorFunction, Observable, of, race, Subject } from 'rxjs';
 import { GameServerResolutionService } from './game-server-resolution.service';
 import { GameServer } from './game-server';
 import { RuntimeErrorsService } from './runtime-errors.service';
-import { delay, filter, first } from 'rxjs/operators';
+import { delay, filter, first, mapTo } from 'rxjs/operators';
 
 
 /**
@@ -84,46 +84,45 @@ export class ServersListService {
         }
       });
 
+      // Will emits if catch block is executed
+      const errorOccurred = new Subject<undefined>();
       try { // Uncaught errors for current server must NOT block following servers to be tested
         // Tries to connect to server parsing current URL connecting with user-provided facility
         const serverConnection = connection(currentServerUrl, this.runtimeErrors);
 
-        // Connects to evaluated game server URL, reporting any WS error through service errors handler
+        // Will emits without value which doesn't matter here as soon as RPTL connection is done
+        const connectionDone: Observable<undefined> = this.rptlProtocol.getState().pipe(first(), filter(
+          (newState: RptlState) => newState === RptlState.UNREGISTERED
+          ), mapTo(undefined)
+        );
+
         const context: ServersListService = this;
-        // As soon as RPTL connection is done (not registered, just connected), begin CHECKOUT sending and response handling
-        this.rptlProtocol.getState().pipe(first(), filter(
-          (newState: RptlState) => newState === RptlState.UNREGISTERED)
-        ).subscribe({
+        // If an error is thrown before connection has been done, we must not be waiting for another RPTL connection
+        race(errorOccurred, connectionDone).subscribe({
           next(): void {
-            let statusRetrieved = false;
+            // Will emits undefined status at RPTL disconnection from server
+            const disconnection: Observable<undefined> = context.rptlProtocol.getState().pipe(filter(
+              (newState: RptlState) => newState === RptlState.DISCONNECTED
+              ), mapTo(undefined)
+            );
+            // Will emits defined status AVAILABILITY command will be received from server
+            const serverStatus: Observable<Availability> = context.rptlProtocol.getStatus();
 
-            // Now we're sure that we are connected to server and that beginSession() call succeeded, we can listen for server
-            // disconnection to avoid waiting delay expiration if connection is closed for whatever reason BEFORE status was retrieved
-            context.rptlProtocol.getState().pipe(first(), filter(
-              (newState: RptlState) => newState === RptlState.DISCONNECTED)
-            ).subscribe({
-              next(): void {
-                if (!statusRetrieved) { // It's normal that connection is closed after status was retrieved
-                  retrievedStatus.next();
-                }
-              }
+            // If disconnected before AVAILABILITY command is received, that an error occurred and status is undefined
+            race(disconnection, serverStatus).subscribe({
+              next: (receivedStatus: Availability | undefined): void => { retrievedStatus.next(receivedStatus); }
             });
 
-            // As soon as STATUS command is received as a response, pushes value into retrieved status
-            context.rptlProtocol.getStatus().subscribe({
-              next(serverStatus: Availability): void {
-                statusRetrieved = true; // Expects a RPTL disconnection from server since now
-                retrievedStatus.next(serverStatus);
-              }
-            });
-
-            // Sends the CHECKOUT command to get a STATUS command as a response
+            // Sends the CHECKOUT command to get an AVAILABILITY command as a response
             context.rptlProtocol.updateStatusFromServer();
           }
         });
 
         this.rptlProtocol.beginSession(serverConnection);
       } catch (err: any) {
+        // Notifies an error has been thrown to avoid being still waiting for RPTL connection after function exits
+        errorOccurred.next();
+
         // Logs uncaught error
         this.runtimeErrors.throwError(err.message);
         console.error(err);
