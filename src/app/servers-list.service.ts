@@ -25,6 +25,43 @@ export type ConnectionFactory = (currentServerUrl: string, errorsHandler: Runtim
 
 
 /**
+ * @param source Observable to filter
+ *
+ * @returns Observable emitting only the first callback invoked by `source`, no matter if it is `next`, `complete` or `error`
+ */
+function firstCallback<T>(source: Observable<T>): Observable<T> {
+  const filtered = new Subject<T>();
+
+  let callbackInvoked = false; // Will be set to true by any source callback
+
+  // Each callback checks if it is the first to be called. If and only if it is the case, it will pass the call to the filtered Subject
+  // corresponding method and notifies that no more callback should be passed through filtered Subject
+  function passOnce(callback: () => void): void {
+    if (!callbackInvoked) {
+      callbackInvoked = true;
+      callback();
+    }
+  }
+
+  source.subscribe({
+    next(value?: T): void {
+      passOnce(() => filtered.next(value));
+    },
+
+    error(err: any): void {
+      passOnce(() => filtered.error(err));
+    },
+
+    complete(): void {
+      passOnce(() => filtered.complete());
+    }
+  });
+
+  return filtered;
+}
+
+
+/**
  * Connects and sends a checkout RPTL command to each service listed inside `servers.json` file, then provides data for status response
  * from current HTTPS server.
  *
@@ -100,17 +137,12 @@ export class ServersListService {
         // If an error is thrown before connection has been done, we must not be waiting for another RPTL connection
         race(errorOccurred, connectionDone).subscribe({
           next(): void {
-            // Will emits undefined status at RPTL disconnection from server
-            const disconnection: Observable<undefined> = context.rptlProtocol.getState().pipe(filter(
-              (newState: RptlState) => newState === RptlState.DISCONNECTED
-              ), mapTo(undefined)
-            );
-            // Will emits defined status AVAILABILITY command will be received from server
-            const serverStatus: Observable<Availability> = context.rptlProtocol.getStatus();
-
-            // If disconnected before AVAILABILITY command is received, that an error occurred and status is undefined
-            race(disconnection, serverStatus).subscribe({
-              next: (receivedStatus: Availability | undefined): void => { retrievedStatus.next(receivedStatus); }
+            // If disconnected before AVAILABILITY command is received, then status observable is errored or completed so status is
+            // undefined because it hasn't been received
+            context.rptlProtocol.getStatus().pipe(firstCallback).subscribe({
+              next: (receivedStatus: Availability): void => retrievedStatus.next(receivedStatus),
+              error: () => retrievedStatus.next(undefined),
+              complete: () => retrievedStatus.next(undefined)
             });
 
             // Sends the CHECKOUT command to get an AVAILABILITY command as a response
