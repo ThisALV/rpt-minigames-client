@@ -1,13 +1,11 @@
 import { Injectable } from '@angular/core';
 import { servers } from './servers.json';
-import { RptlProtocolService, RptlState } from 'rpt-webapp-client';
+import { Availability, RptlProtocolService, RptlState } from 'rpt-webapp-client';
 import { MonoTypeOperatorFunction, Observable, of, race, Subject } from 'rxjs';
 import { GameServerResolutionService } from './game-server-resolution.service';
 import { GameServer } from './game-server';
-import { rptlConnectionFor } from './game-server-connection';
 import { RuntimeErrorsService } from './runtime-errors.service';
-import { delay, find } from 'rxjs/operators';
-import { Availability } from 'rpt-webapp-client/lib/availability';
+import { delay, filter, first, mapTo } from 'rxjs/operators';
 
 
 /**
@@ -17,6 +15,49 @@ export class ServersListBusy extends Error {
   constructor() {
     super('Already updating servers list');
   }
+}
+
+
+/**
+ * Used by `ServersListService.update()` to create connection with each server in the list using its URL and runtime errors handler
+ */
+export type ConnectionFactory = (currentServerUrl: string, errorsHandler: RuntimeErrorsService) => Subject<string>;
+
+
+/**
+ * @param source Observable to filter
+ *
+ * @returns Observable emitting only the first callback invoked by `source`, no matter if it is `next`, `complete` or `error`
+ */
+function firstCallback<T>(source: Observable<T>): Observable<T> {
+  const filtered = new Subject<T>();
+
+  let callbackInvoked = false; // Will be set to true by any source callback
+
+  // Each callback checks if it is the first to be called. If and only if it is the case, it will pass the call to the filtered Subject
+  // corresponding method and notifies that no more callback should be passed through filtered Subject
+  function passOnce(callback: () => void): void {
+    if (!callbackInvoked) {
+      callbackInvoked = true;
+      callback();
+    }
+  }
+
+  source.subscribe({
+    next(value?: T): void {
+      passOnce(() => filtered.next(value));
+    },
+
+    error(err: any): void {
+      passOnce(() => filtered.error(err));
+    },
+
+    complete(): void {
+      passOnce(() => filtered.complete());
+    }
+  });
+
+  return filtered;
 }
 
 
@@ -31,7 +72,7 @@ export class ServersListBusy extends Error {
 })
 export class ServersListService {
   private currentServer?: number; // Index of server which is currently waiting a status, if any
-  private serversStatus: Subject<GameServer[]>;
+  private readonly serversStatus: Subject<GameServer[]>;
 
   /**
    * Constructs a service which is not waiting for server status and without any retrieved status for now.
@@ -48,7 +89,10 @@ export class ServersListService {
   }
 
   // Called recursively and asynchronously while every server status hasn't been retrieved
-  private updateNext(delayPipeOperator: MonoTypeOperatorFunction<undefined>, updatedStatus: GameServer[] = []): void {
+  private updateNext(connection: ConnectionFactory,
+                     delayPipeOperator: MonoTypeOperatorFunction<undefined>,
+                     updatedStatus: GameServer[] = []): void
+  {
     // If every server status has been updated, marks update as done, pushes new status inside subject then stops async recursion
     if (this.currentServer === servers.length) {
       this.currentServer = undefined;
@@ -73,24 +117,40 @@ export class ServersListService {
           // Final server status after having tried to obtain status from server
           const definitiveServerData = new GameServer(currentServerData.name, currentServerData.game, serverStatus);
           // A new server status has been defined, go to next server
-          this.updateNext(delayPipeOperator, updatedStatus.concat(definitiveServerData));
+          this.updateNext(connection, delayPipeOperator, updatedStatus.concat(definitiveServerData));
         }
       });
 
+      // Will emits if catch block is executed
+      const errorOccurred = new Subject<boolean>();
       try { // Uncaught errors for current server must NOT block following servers to be tested
-        // Connects to evaluated game server URL, reporting any WS error through service errors handler
-        const serverConnection = rptlConnectionFor(currentServerUrl, this.runtimeErrors);
+        // Tries to connect to server parsing current URL connecting with user-provided facility
+        const serverConnection = connection(currentServerUrl, this.runtimeErrors);
+
+        // Will emits true informing us that connect operation succeeded as soon as RPTL connection is done
+        const connectionDone: Observable<boolean> = this.rptlProtocol.getState().pipe(first(), filter(
+          (newState: RptlState) => newState === RptlState.UNREGISTERED
+          ), mapTo(true)
+        );
 
         const context: ServersListService = this;
-        // As soon as RPTL connection is done (not registered, just connected), begin CHECKOUT sending and response handling
-        this.rptlProtocol.getState().pipe(find((newState: RptlState) => newState === RptlState.UNREGISTERED)).subscribe({
-          next(): void {
-            // As soon as STATUS command is received as a response, pushes value into retrieved status
-            context.rptlProtocol.getStatus().subscribe({
-              next: (serverStatus: Availability) => retrievedStatus.next(serverStatus)
+        // If an error is thrown before connection has been done, we must not be waiting for another RPTL connection
+        race(errorOccurred, connectionDone).subscribe({
+          next(connected: boolean): void {
+            if (!connected) { // Checks for which observable emitted the first, if it is errorOccurred, then we cannot obtain status
+              retrievedStatus.next(undefined);
+              return;
+            }
+
+            // If disconnected before AVAILABILITY command is received, then status observable is errored or completed so status is
+            // undefined because it hasn't been received
+            context.rptlProtocol.getStatus().pipe(firstCallback).subscribe({
+              next: (receivedStatus: Availability): void => retrievedStatus.next(receivedStatus),
+              error: () => retrievedStatus.next(undefined),
+              complete: () => retrievedStatus.next(undefined)
             });
 
-            // Sends the CHECKOUT command to get a STATUS command as a response
+            // Sends the CHECKOUT command to get an AVAILABILITY command as a response
             context.rptlProtocol.updateStatusFromServer();
           }
         });
@@ -101,9 +161,9 @@ export class ServersListService {
         this.runtimeErrors.throwError(err.message);
         console.error(err);
 
-        // Manually stops waiting for a response, ensures that race subscriber next() callback is called, so we can put connection close
-        // code there
-        retrievedStatus.next(undefined);
+        // Notifies an error has been thrown to avoid being still waiting for RPTL connection after function exits and considers status
+        // as undefined for current server
+        errorOccurred.next(false);
       }
     }
   }
@@ -119,17 +179,20 @@ export class ServersListService {
    * Sends a CHECKOUT command and listen for STATUS response for each listed serve, one by one, then publish new servers status array
    * which can be obtained using `getListStatus()`.
    *
+   * @param connection Stream required by underlying RPTL protocol to communicate with server
    * @param delayPipeOperator When the `Observable<undefined>` returned by this operator next a new `undefined` value, a server checkout
    * times out and the process go to the next server, considering current server as not working
+   *
+   * @throws ServersListBusy if another update operation is still running but no new array has been passed to subject yet
    */
-  update(delayPipeOperator: MonoTypeOperatorFunction<undefined> = delay(500)): void {
+  update(connection: ConnectionFactory, delayPipeOperator: MonoTypeOperatorFunction<undefined> = delay(500)): void {
     if (this.isUpdating()) { // Can't handle 2 recursive updates at the same time
       throw new ServersListBusy();
     }
 
     // Initializes servers status update
     this.currentServer = 0; // Beginning with the first server to be listed
-    this.updateNext(delayPipeOperator);
+    this.updateNext(connection, delayPipeOperator);
   }
 
   /**

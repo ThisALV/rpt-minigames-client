@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { RuntimeError, RuntimeErrorsService } from './runtime-errors.service';
 import { Observable, Subject } from 'rxjs';
 import { SerProtocolService } from 'rpt-webapp-client';
-import { unexpected } from './testing-helpers';
+import { expectArrayToBeEqual, unexpected } from './testing-helpers';
 
 
 /**
@@ -42,9 +42,9 @@ describe('RuntimeErrorsService', () => {
   });
 
   it('should automatically listen for SER errors at construction', () => {
-    const errorsReceived: RuntimeError[] = [];
+    const errorsReceived: string[] = [];
     service.observe().subscribe({ // Saves each error emitted by subject to check them later
-      next: (error: RuntimeError) => errorsReceived.push(error),
+      next: (error: RuntimeError) => errorsReceived.push(error.message),
       complete: unexpected,
       error: unexpected
     });
@@ -54,15 +54,13 @@ describe('RuntimeErrorsService', () => {
     errorsSource.errors.next('Runtime error 2');
 
     // Checks for the 2 errors to have been reported by the service
-    expect(errorsReceived).toHaveSize(2);
-    expect(errorsReceived[0].message).toEqual('Runtime error 1');
-    expect(errorsReceived[1].message).toEqual('Runtime error 2');
+    expectArrayToBeEqual(errorsReceived, 'Runtime error 1', 'Runtime error 2');
   });
 
   it('should reports error when thrown with service', () => {
-    const errorsReceived: RuntimeError[] = [];
+    const errorsReceived: string[] = [];
     service.observe().subscribe({ // Saves each error emitted by subject to check them later
-      next: (error: RuntimeError) => errorsReceived.push(error),
+      next: (error: RuntimeError) => errorsReceived.push(error.message),
       complete: unexpected,
       error: unexpected
     });
@@ -72,8 +70,6 @@ describe('RuntimeErrorsService', () => {
     service.throwError('Runtime error 2');
 
     // Checks for the 2 errors to have been reported by the service
-    expect(errorsReceived).toHaveSize(2);
-    expect(errorsReceived[0].message).toEqual('Runtime error 1');
-    expect(errorsReceived[1].message).toEqual('Runtime error 2');
+    expectArrayToBeEqual(errorsReceived, 'Runtime error 1', 'Runtime error 2');
   });
 });
