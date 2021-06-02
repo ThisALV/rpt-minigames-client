@@ -175,7 +175,7 @@ export class LobbyService extends SerService {
    * This method is called by service at each players registry modifications, but it can also be called by user to force array to be
    * pushed again into subject.
    */
-  private updatePlayersArraySubject(): void {
+   updatePlayersArraySubject(): void {
     this.playersArray.next(Object.values(this.players)); // For the component which will read that, it's easier if it is an array
   }
 }
