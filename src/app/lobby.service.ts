@@ -56,7 +56,10 @@ export class LobbyService extends SerService {
 
     // Listen for updates in Lobby players list
     playersListProvider.getList().subscribe({
-      next: (actorsList: number[]) => this.updatePlayersList(actorsList)
+      next: (actorsList: number[]) => {
+        this.updatePlayersList(actorsList); // Adapts players list to added/removed actors
+        this.updatePlayersArraySubject(); // Pushes new array into subject
+      }
     });
 
     // Listen for Lobby Service commands to handle them
@@ -75,12 +78,14 @@ export class LobbyService extends SerService {
         // 1 arg: player actor UID
         const parsedUid = new CommandParser(parsedCommand.unparsed).parseTo(uidArgumentScheme);
         this.players[parsedUid.parsedData.uid].isReady = true;
+        this.updatePlayersArraySubject(); // Passes array with new data into subject
 
         break;
       } case 'WAITING_FOR_PLAYER': {
         // 1 arg: player actor UID
         const parsedUid = new CommandParser(parsedCommand.unparsed).parseTo(uidArgumentScheme);
         this.players[parsedUid.parsedData.uid].isReady = false;
+        this.updatePlayersArraySubject(); // Passes array with new data into subject
 
         break;
       } case 'BEGIN_COUNTDOWN':
@@ -162,5 +167,15 @@ export class LobbyService extends SerService {
    */
   getPlayers(): Observable<Player[]> {
     return this.playersArray;
+  }
+
+  /**
+   * Converts current players dictionary into an array for passing it to `playersArrays` subject.
+   *
+   * This method is called by service at each players registry modifications, but it can also be called by user to force array to be
+   * pushed again into subject.
+   */
+  private updatePlayersArraySubject(): void {
+    this.playersArray.next(Object.values(this.players)); // For the component which will read that, it's easier if it is an array
   }
 }
