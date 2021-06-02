@@ -27,6 +27,20 @@ export function expectArrayToBeEqual<T>(a1: T[], ...a2: T[]): void {
 
 
 /**
+ * Checks for the first array to contain at least one time every argument passed, no matter their actual order inside that array.
+ *
+ * @param arr Array to check content for
+ * @param elems Elements to check presence into array for
+ */
+export function expectArrayToContainAllOff<T>(arr: T[], ...elems: T[]): void {
+  // Element by element, checks if it is contained inside array
+  for (const e of elems) {
+    expect(arr).toContain(e);
+  }
+}
+
+
+/**
  * Mocks any subject which is using next() method to send a message and next() callback to receive a message (for example, a
  * `WebSocketSubject<string>`)
  */
