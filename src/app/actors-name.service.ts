@@ -81,6 +81,11 @@ export class ActorsNameService {
     return this.actorsNameRegistry !== undefined;
   }
 
+  /**
+   * @param actorUid Actor to retrieve name for
+   *
+   * @returns Name associated with given actor
+   */
   nameFor(actorUid: number): string {
     if (!this.isAvailable()) { // Checks for actors registry to be available
       throw new BadRptlMode(true);
@@ -96,4 +101,6 @@ export class ActorsNameService {
     // It it is the case, returns its name
     return name;
   }
+
+
 }
