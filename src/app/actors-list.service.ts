@@ -5,7 +5,7 @@ import { filter } from 'rxjs/operators';
 
 
 /**
- * Provides a list of actors UID with a subject which is never stopped, with no need to manually call `updateActorsFromServer()` call.
+ * Provides a list of actors UID with a subject which is never stopped, with no need to manually call `updateActorsSubscribable()` call.
  *
  * @author ThisALV, https://github.com/ThisALV/
  */
@@ -32,6 +32,9 @@ export class ActorsListService {
           // Converts actors list into an UIDs list, and pushes new value into subject
           next: (updatedList: Actor[]) => context.actors.next(updatedList.map((a: Actor) => a.uid))
         });
+
+        // Right after registration, actors list hasn't been passed into subject, must be updated manually
+        rptlProtocol.updateActorsSubscribable();
       }
     });
   }
