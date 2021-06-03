@@ -112,13 +112,13 @@ describe('LobbyService', () => {
 
     it('should do both', () => {
       connection.receive('LOGGED_OUT 33'); // Emulates Redox disconnection
-      connection.receive('LOGGED_IN 53 Cobalt'); // Emulates Cobalt disconnection
+      connection.receive('LOGGED_IN 53 Cobalt'); // Emulates Cobalt connection
 
       expect(players).toBeDefined();
-      expect(players).toHaveSize(3);
+      expect(players).toHaveSize(2);
       expectArrayToContainAllOff(players as Player[],
         new Player(42, false),
-        new Player(5, false),
+        new Player(53, false),
       );
     });
   });
