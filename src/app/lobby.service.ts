@@ -67,9 +67,11 @@ export class LobbyService extends SerService {
   private handleCommand(lobbyCommand: string): void {
     // Parses which lobby command is invoked
     const parsedCommand = new CommandParser(lobbyCommand).parseTo([{ name: 'command', type: String }]);
+    // Converts to primitive-type value
+    const command: string = String(parsedCommand.parsedData.command);
 
     // Depending on Lobby Service invoked command
-    switch (parsedCommand.parsedData.command) {
+    switch (command) {
       case 'READY_PLAYER': { // Case scope blocks required because of parsedUid local const
         // 1 arg: player actor UID
         const parsedUid = new CommandParser(parsedCommand.unparsed).parseTo(uidArgumentScheme);
@@ -104,7 +106,7 @@ export class LobbyService extends SerService {
         this.playing.next(false); // Updates status: Lobby is no longer busy with minigame because it stopped
         break;
       default:
-        throw new BadSerCommand(`Unknown Lobby command: ${parsedCommand.parsedData.command}`);
+        throw new BadSerCommand(`Unknown Lobby command: ${command}`);
     }
   }
 
