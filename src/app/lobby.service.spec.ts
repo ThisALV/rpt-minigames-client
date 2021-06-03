@@ -193,7 +193,7 @@ describe('LobbyService', () => {
         expect(service.getCurrentCountdown()).toEqual(3750);
 
         // Emulates that countdown is cancelled
-        connection.receive('SEVICE EVENT Lobby END_COUNTDOWN');
+        connection.receive('SERVICE EVENT Lobby END_COUNTDOWN');
         expect(isStarting).toBeFalse();
         expect(() => service.getCurrentCountdown()).toThrowError(BadLobbyState); // Countdown no longer exist
     });
