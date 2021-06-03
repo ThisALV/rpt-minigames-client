@@ -42,6 +42,13 @@ describe('LobbyService', () => {
     service = TestBed.inject(LobbyService);
   });
 
+  // Required to stop RPTL provided subjects at end of each test, it not some subscriber will "leak" outside their tests and cause an
+  // error inside afterAll() call.
+  afterEach(() => {
+    rptlProtocol.endSession(); // Send LOGOUT to engage disconnection
+    connection.receive('INTERRUPT'); // Server disconnection done
+  });
+
   it('should be created and listen for players list and commands', () => {
     expect(service).toBeTruthy();
 
