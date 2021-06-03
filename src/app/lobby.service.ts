@@ -3,7 +3,6 @@ import { ArgumentScheme, BadSerCommand, CommandParser, SerProtocolService, SerSe
 import { Player } from './player';
 import { Observable, Subject } from 'rxjs';
 import { ActorsListService } from './actors-list.service';
-import { ActorsNameService } from './actors-name.service';
 
 
 // Used to parse READY_PLAYER and WAITING_FOR_PLAYER commands arguments
@@ -43,10 +42,7 @@ export class LobbyService extends SerService {
   // Might not be defined if minigame isn't starting
   private currentCountdown?: number;
 
-  constructor(serProtocol: SerProtocolService,
-              playersListProvider: ActorsListService,
-              private readonly namesProvider: ActorsNameService)
-  {
+  constructor(serProtocol: SerProtocolService, playersListProvider: ActorsListService) {
     super(serProtocol, 'Lobby'); // Registers Service into SER Protocol under the name Lobby used for SER commands
 
     this.players = {}; // No players until a list is provided by RptlProtocolService
@@ -130,7 +126,7 @@ export class LobbyService extends SerService {
     // Each new actor which is not a player inside Lobby will become one, as not ready
     for (const actorUid of updatedUids) {
       if (!currentUids.has(actorUid)) {
-        this.players[actorUid] = new Player(actorUid, this.namesProvider.nameFor(actorUid), false);
+        this.players[actorUid] = new Player(actorUid, false);
       }
     }
   }

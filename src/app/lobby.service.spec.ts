@@ -73,7 +73,7 @@ describe('LobbyService', () => {
     expect(players).toBeDefined();
     expect(players).toHaveSize(2);
     expectArrayToContainAllOff(players as Player[],
-      new Player(42, 'ThisALV', false), new Player(33, 'Redox', false)
+      new Player(42, false), new Player(33, false)
     );
   });
 
@@ -95,30 +95,30 @@ describe('LobbyService', () => {
 
       expect(players).toBeDefined();
       expect(players).toHaveSize(1);
-      expectArrayToContainAllOff(players as Player[], new Player(42, 'ThisALV', false));
+      expectArrayToContainAllOff(players as Player[], new Player(42, false));
     });
 
     it('should add new players', () => {
-      connection.receive('LOGGED_IN 5 Cobalt'); // Emulates Cobalt disconnection
+      connection.receive('LOGGED_IN 50 Cobalt'); // Emulates Cobalt disconnection
 
       expect(players).toBeDefined();
       expect(players).toHaveSize(3);
       expectArrayToContainAllOff(players as Player[],
-        new Player(42, 'ThisALV', false),
-        new Player(33, 'Redox', false),
-        new Player(5, 'Cobalt', false),
+        new Player(42, false),
+        new Player(33, false),
+        new Player(50, false),
       );
     });
 
     it('should do both', () => {
       connection.receive('LOGGED_OUT 33'); // Emulates Redox disconnection
-      connection.receive('LOGGED_IN 5 Cobalt'); // Emulates Cobalt disconnection
+      connection.receive('LOGGED_IN 53 Cobalt'); // Emulates Cobalt disconnection
 
       expect(players).toBeDefined();
       expect(players).toHaveSize(3);
       expectArrayToContainAllOff(players as Player[],
-        new Player(42, 'ThisALV', false),
-        new Player(5, 'Cobalt', false),
+        new Player(42, false),
+        new Player(5, false),
       );
     });
   });
@@ -149,8 +149,8 @@ describe('LobbyService', () => {
       expect(players).toBeDefined();
       expect(players).toHaveSize(2);
       expectArrayToContainAllOff(players as Player[],
-        new Player(42, 'ThisALV', true),
-        new Player(33, 'Redox', false)
+        new Player(42, true),
+        new Player(33, false)
       );
     });
 
@@ -173,8 +173,8 @@ describe('LobbyService', () => {
       expect(players).toBeDefined();
       expect(players).toHaveSize(2);
       expectArrayToContainAllOff(players as Player[],
-        new Player(42, 'ThisALV', false),
-        new Player(33, 'Redox', true)
+        new Player(42, false),
+        new Player(33, true)
       );
     });
 
