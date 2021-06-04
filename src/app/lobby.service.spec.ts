@@ -17,6 +17,8 @@ describe('LobbyService', () => {
   let namesProvider: ActorsNameService;
 
   let service: LobbyService;
+  // Last value emitted by getPlayers(), if any. It requires to be defined because getPlayers() is called at beforeEach.
+  let players: Player[] | undefined;
 
   beforeEach(() => {
     connection = new MockedMessagingSubject();
@@ -25,11 +27,6 @@ describe('LobbyService', () => {
     serProtocol = new SerProtocolService(rptlProtocol);
     playersListProvider = new ActorsListService(rptlProtocol);
     namesProvider = new ActorsNameService(rptlProtocol);
-
-    // Because Lobby is only useful as a registered actor, we will emulates a client registration before each unit test
-    rptlProtocol.beginSession(connection); // Connects to server
-    rptlProtocol.register(42, 'ThisALV'); // Sends LOGIN command
-    connection.receive('REGISTRATION 42 ThisALV 33 Redox'); // Server confirms registration, an other player is already inside Lobby
 
     TestBed.configureTestingModule({
       providers: [ // Uses service bounded injected with RPTL protocol using mocked connection
@@ -40,6 +37,18 @@ describe('LobbyService', () => {
     });
 
     service = TestBed.inject(LobbyService);
+
+    // Must be listened before registration, otherwise initial players will not be saved at it is emitted right after registration
+    service.getPlayers().subscribe({
+      next: (updatedPlayers: Player[]) => players = updatedPlayers,
+      complete: unexpected,
+      error: unexpected
+    });
+
+    // Because Lobby is only useful as a registered actor, we will emulates a client registration before each unit test
+    rptlProtocol.beginSession(connection); // Connects to server
+    rptlProtocol.register(42, 'ThisALV'); // Sends LOGIN command
+    connection.receive('REGISTRATION 42 ThisALV 33 Redox'); // Server confirms registration, an other player is already inside Lobby
   });
 
   // Required to stop RPTL provided subjects at end of each test, it not some subscriber will "leak" outside their tests and cause an
@@ -59,37 +68,19 @@ describe('LobbyService', () => {
       error: unexpected
     });
 
-    let players: Player[] | undefined; // Here we want to checks if players list is listened for, so we check for initial players
-    service.getPlayers().subscribe({
-      next: (updatedPlayers: Player[]) => players = updatedPlayers,
-      complete: unexpected,
-      error: unexpected
-    });
-
     connection.receive('SERVICE EVENT Lobby PLAYING'); // Checks Lobby commands to be listened for
     service.updatePlayersArraySubject(); // Checks players list to be listened for
 
     expect(handledCommand).toBeTrue();
     expect(players).toBeDefined();
     expect(players).toHaveSize(2);
+    // Here we want to checks if players list is listened for, so we check for initial players
     expectArrayToContainAllOff(players as Player[],
       new Player(42, false), new Player(33, false)
     );
   });
 
   describe('updatePlayersList()', () => {
-    let players: Player[] | undefined;
-
-    // For each unit test, saves which players array is emitted by service
-    beforeEach(() => {
-      // Here we want to checks if players list is listened for, so we check for initial players
-      service.getPlayers().subscribe({
-        next: (updatedPlayers: Player[]) => players = updatedPlayers,
-        complete: unexpected,
-        error: unexpected
-      });
-    });
-
     it('should remove missing players', () => {
       connection.receive('LOGGED_OUT 33'); // Emulates Redox disconnection
 
@@ -137,13 +128,6 @@ describe('LobbyService', () => {
 
   describe('Commands handling', () => {
     it('should set ready to true and update array on READY_PLAYER', () => {
-      let players: Player[] | undefined; // Here we want to checks if players list is listened for, so we check for initial players
-      service.getPlayers().subscribe({
-        next: (updatedPlayers: Player[]) => players = updatedPlayers,
-        complete: unexpected,
-        error: unexpected
-      });
-
       connection.receive('SERVICE EVENT Lobby READY_PLAYER 42'); // Emulates that ThisALV is now ready
 
       expect(players).toBeDefined();
@@ -155,13 +139,6 @@ describe('LobbyService', () => {
     });
 
     it('should set ready to false and update array on WAITING_FOR_PLAYER', () => {
-      let players: Player[] | undefined; // Here we want to checks if players list is listened for, so we check for initial players
-      service.getPlayers().subscribe({
-        next: (updatedPlayers: Player[]) => players = updatedPlayers,
-        complete: unexpected,
-        error: unexpected
-      });
-
       // Emulates that both players are now ready
       connection.receive('SERVICE EVENT Lobby READY_PLAYER 42');
       connection.receive('SERVICE EVENT Lobby READY_PLAYER 33');
