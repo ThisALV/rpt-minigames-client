@@ -134,6 +134,13 @@ export class LobbyService extends SerService {
   }
 
   /**
+   * Sends READY command to toggle client own player state.
+   */
+  toggleReady(): void {
+    this.serviceSubject.next('READY');
+  }
+
+  /**
    * @returns Current countdown duration in milliseconds
    *
    * @throws BadLobbyState if Lobby minigame isn't starting

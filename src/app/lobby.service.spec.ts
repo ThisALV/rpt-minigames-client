@@ -3,7 +3,7 @@ import { BadLobbyState, LobbyService } from './lobby.service';
 import { RptlProtocolService, SerProtocolService } from 'rpt-webapp-client';
 import { ActorsListService } from './actors-list.service';
 import { ActorsNameService } from './actors-name.service';
-import { expectArrayToContainAllOff, MockedMessagingSubject, unexpected } from './testing-helpers';
+import { expectArrayToBeEqual, expectArrayToContainAllOff, MockedMessagingSubject, unexpected } from './testing-helpers';
 import { Player } from './player';
 
 
@@ -190,6 +190,27 @@ describe('LobbyService', () => {
       // Emulates server notifies Lobby is now waiting for countdown again
       connection.receive('SERVICE EVENT Lobby WAITING');
       expect(isPlaying).toBeFalse();
+    });
+  });
+
+  describe('toggleReady()', () => {
+    it('should send READY command', () => {
+      // Clear messages produced by fixture beforeEach()
+      while (connection.sentMessagesQueue.length !== 0) {
+        connection.sentMessagesQueue.pop();
+      }
+
+      // Toggle state 3 times
+      for (let i = 0; i < 3; i++) {
+        service.toggleReady();
+      }
+
+      // Should have sent 3 times the same command
+      expectArrayToBeEqual(connection.sentMessagesQueue,
+        'SERVICE REQUEST 0 Lobby READY',
+        'SERVICE REQUEST 1 Lobby READY',
+        'SERVICE REQUEST 2 Lobby READY'
+      );
     });
   });
 });
