@@ -50,4 +50,24 @@ describe('ActorsListService', () => {
     connection.receive('LOGGED_OUT 5');
     expectArrayToContainAllOff(lastEmittedList, 33, 42);
   });
+
+  it('should update actors list manually when updateList() is called', () => {
+    rptlProtcol.beginSession(connection); // Connects client to server
+    rptlProtcol.register(42, 'ThisALV'); // Registers new actor as [42] ThisALV
+    connection.receive('REGISTRATION 44 Redox 33 Lait2Vache 42 ThisALV'); // Registration with already registered players
+
+    let lastEmittedList: number[] | undefined; // Last UIDs list emitted by subject
+    service.getList().subscribe({
+      next: (updatedList: number[]) => lastEmittedList = updatedList,
+      // It should never stop
+      error: unexpected,
+      complete: unexpected
+    });
+
+    expect(lastEmittedList).toBeUndefined(); // No value emitted as actors list modifications happened before getList() subscription
+
+    service.updateList(); // Now value is emitted manually
+    expect(lastEmittedList).toHaveSize(3);
+    expectArrayToContainAllOff(lastEmittedList as number[], 42, 33, 44); // Should contains every actors at initialization
+  });
 });

@@ -5,7 +5,8 @@ import { filter } from 'rxjs/operators';
 
 
 /**
- * Provides a list of actors UID with a subject which is never stopped, with no need to manually call `updateActorsSubscribable()` call.
+ * Provides a list of actors UID with a subject which is never stopped, with no need to manually call `updateActorsSubscribable()` call
+ * if observed before registration, as UIDs will be automatically emitted at when registered mode is enabled.
  *
  * @author ThisALV, https://github.com/ThisALV/
  */
@@ -13,14 +14,14 @@ import { filter } from 'rxjs/operators';
   providedIn: 'root'
 })
 export class ActorsListService {
-  private actors: Subject<number[]>;
+  private readonly actors: Subject<number[]>;
 
   /**
    * Initializes subject with currently connected actors, listening for next actors list updates.
    *
    * @param rptlProtocol Actors list updates provider
    */
-  constructor(rptlProtocol: RptlProtocolService) {
+  constructor(private readonly rptlProtocol: RptlProtocolService) {
     this.actors = new Subject<number[]>();
 
     const context: ActorsListService = this;
@@ -44,5 +45,12 @@ export class ActorsListService {
    */
   getList(): Observable<number[]> {
     return this.actors;
+  }
+
+  /**
+   * Pushes the current actors UID list inside `getList()` subject.
+   */
+  updateList(): void {
+    this.rptlProtocol.updateActorsSubscribable();
   }
 }
