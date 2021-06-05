@@ -1,8 +1,17 @@
 import { Injectable } from '@angular/core';
-import { ArgumentScheme, BadSerCommand, CommandParser, SerProtocolService, SerService } from 'rpt-webapp-client';
+import {
+  ArgumentScheme,
+  BadSerCommand,
+  CommandParser,
+  RptlProtocolService,
+  RptlState,
+  SerProtocolService,
+  SerService
+} from 'rpt-webapp-client';
 import { Player } from './player';
 import { Observable, Subject } from 'rxjs';
 import { ActorsListService } from './actors-list.service';
+import { filter } from 'rxjs/operators';
 
 
 // Used to parse READY_PLAYER and WAITING_FOR_PLAYER commands arguments
@@ -24,14 +33,15 @@ export class BadLobbyState extends Error {
  * - Is the countdown before starting Minigame running?
  * - Who are the connected players? Are they ready to start?
  *
+ * Data and states are automatically reset, including passing false to isStarting() and isPlaying(), when Lobby is quit by disconnection
+ * from server.
+ *
  * @author ThisALV, https://github.com/ThisALV/
  */
 @Injectable({
   providedIn: 'root'
 })
 export class LobbyService extends SerService {
-  // Will be updated with the actors list
-  private readonly players: { [actorUid: number]: Player };
   // Set to true when BEGIN_COUNTDOWN is received, set to false when END_COUNTDOWN is received
   private readonly starting: Subject<boolean>;
   // Set to true when PLAYING is received, set to false when WAITING is received
@@ -39,10 +49,12 @@ export class LobbyService extends SerService {
   // Players dictionary translated into an array because it's easier to read for the component
   private readonly playersArray: Subject<Player[]>;
 
+  // Will be updated with the actors list
+  private players: { [actorUid: number]: Player };
   // Might not be defined if minigame isn't starting
   private currentCountdown?: number;
 
-  constructor(serProtocol: SerProtocolService, playersListProvider: ActorsListService) {
+  constructor(stateProvider: RptlProtocolService, serProtocol: SerProtocolService, playersListProvider: ActorsListService) {
     super(serProtocol, 'Lobby'); // Registers Service into SER Protocol under the name Lobby used for SER commands
 
     this.players = {}; // No players until a list is provided by RptlProtocolService
@@ -62,6 +74,19 @@ export class LobbyService extends SerService {
     this.serviceSubject.subscribe({
       next: (lobbyCommand: string): void => this.handleCommand(lobbyCommand)
     });
+
+    // When disconnected, must automatically reset data and states. Observes for DISCONNECTED state.
+    stateProvider.getState().pipe(filter((newState: RptlState) => newState === RptlState.DISCONNECTED)).subscribe({
+      next: () => this.reset()
+    });
+  }
+
+  // Resets for new Lobby room on a new server
+  private reset(): void {
+    this.players = {};
+    this.currentCountdown = undefined;
+    this.starting.next(false);
+    this.playing.next(false);
   }
 
   private handleCommand(lobbyCommand: string): void {
