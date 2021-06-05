@@ -270,6 +270,15 @@ export class MinigameService extends SerService {
   }
 
   /**
+   * Select a different RpT Minigame to start.
+   *
+   * @param minigame RpT Minigame which will be played at game start
+   */
+  playOn(minigame: MinigameType): void {
+    this.currentMinigame = minigame;
+  }
+
+  /**
    * @returns Retrieves initial minigame grid for current RpT Minigame.
    */
   getInitialGrid(): number[][] {
