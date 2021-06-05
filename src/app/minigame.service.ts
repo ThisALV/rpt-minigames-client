@@ -1,6 +1,15 @@
 import { Injectable } from '@angular/core';
-import { ArgumentConverter, BadSerCommand, CommandParser, SerProtocolService, SerService } from 'rpt-webapp-client';
+import {
+  ArgumentConverter,
+  BadSerCommand,
+  CommandParser,
+  RptlProtocolService,
+  RptlState,
+  SerProtocolService,
+  SerService
+} from 'rpt-webapp-client';
 import { Observable, Subject } from 'rxjs';
+import { filter } from 'rxjs/operators';
 
 
 /**
@@ -118,6 +127,8 @@ const initialGrids = {
  * pawns count and current game status using different subjects. Can interact with game server using `move()` to send a MOVE command
  * with given coordinates.
  *
+ * At disconnection from server, state and data are automatically reset.
+ *
  * @author ThisALV, https://github.com/ThisALV/
  */
 @Injectable({
@@ -136,7 +147,7 @@ export class MinigameService extends SerService {
   private currentMinigame: MinigameType;
   private players?: PlayersConfiguration; // Undefined if no minigame is running
 
-  constructor(serProtocol: SerProtocolService) {
+  constructor(stateProvider: RptlProtocolService, serProtocol: SerProtocolService) {
     super(serProtocol, 'Minigame');
 
     const context: MinigameService = this;
@@ -170,6 +181,17 @@ export class MinigameService extends SerService {
     this.serviceSubject.subscribe({
       next: (minigameCommand: string): void => this.handleCommand(minigameCommand)
     });
+
+    // At disconnection, no game could be possibly running: automatic stop & reset
+    stateProvider.getState().pipe(filter((newState: RptlState) => newState === RptlState.DISCONNECTED)).subscribe({
+      next: () => this.reset()
+    });
+  }
+
+  // Resets state & data
+  private reset(): void {
+    this.started.next(false); // Notifies component no more game is running
+    this.players = undefined; // Resets players data for the next room
   }
 
   private handleCommand(minigameCommand: string): void {
