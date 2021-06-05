@@ -38,14 +38,7 @@ describe('LobbyService', () => {
     connection.receive('REGISTRATION 42 ThisALV 33 Redox'); // Server confirms registration, an other player is already inside Lobby
   });
 
-  // Required to stop RPTL provided subjects at end of each test, it not some subscriber will "leak" outside their tests and cause an
-  // error inside afterAll() call.
-  afterEach(() => {
-    rptlProtocol.endSession(); // Send LOGOUT to engage disconnection
-    connection.receive('INTERRUPT'); // Server disconnection done
-  });
-
-  it('should be created and listen for players list and commands', () => {
+  it('should be created, listen for players list and commands, and reset at disconnection', () => {
     expect(service).toBeTruthy();
 
     let handledCommand = false; // Here we just want to check if command is listened, so we're watching out for its handling
@@ -65,6 +58,26 @@ describe('LobbyService', () => {
     expectArrayToContainAllOff(players as Player[],
       new Player(42, false), new Player(33, false)
     );
+
+    let started: boolean | undefined;
+    service.isStarting().subscribe({ // Here we want to check if state is changed when server disconnects with us
+      next: (starting) => started = starting,
+      complete: unexpected,
+      error: unexpected
+    });
+
+    let play: boolean | undefined;
+    service.isStarting().subscribe({ // Same thing for isPlaying() subject
+      next: (playing) => play = playing,
+      complete: unexpected,
+      error: unexpected
+    });
+
+    expect(started).toBeUndefined(); // No disconnection for now
+    expect(play).toBeUndefined();
+    connection.complete(); // Disconnects with server
+    expect(started).toBeFalse(); // Connection is closed, disconnection occurred, Lobby should be reset so it is no longer starting
+    expect(play).toBeFalse(); // If a game was running on this Lobby, it is stopped because of server disconnection
   });
 
   describe('updatePlayersList()', () => {
