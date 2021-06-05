@@ -1,8 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { BadLobbyState, LobbyService } from './lobby.service';
-import { RptlProtocolService, SerProtocolService } from 'rpt-webapp-client';
-import { ActorsListService } from './actors-list.service';
-import { ActorsNameService } from './actors-name.service';
+import { RptlProtocolService } from 'rpt-webapp-client';
 import { expectArrayToBeEqual, expectArrayToContainAllOff, MockedMessagingSubject, unexpected } from './testing-helpers';
 import { Player } from './player';
 
@@ -10,11 +8,6 @@ import { Player } from './player';
 describe('LobbyService', () => {
   let connection: MockedMessagingSubject; // Mocked connection, used by RPTL protocol to read data from
   let rptlProtocol: RptlProtocolService; // It will use a mocked connection to emulates the server behavior
-
-  // These 3 injectables will receive data from RPTL protocol on the mocked connection so we can control their behavior
-  let serProtocol: SerProtocolService;
-  let playersListProvider: ActorsListService;
-  let namesProvider: ActorsNameService;
 
   let service: LobbyService;
   // Last value emitted by getPlayers(), if any. It requires to be defined because getPlayers() is called at beforeEach.
@@ -24,15 +17,9 @@ describe('LobbyService', () => {
     connection = new MockedMessagingSubject();
     rptlProtocol = new RptlProtocolService();
 
-    serProtocol = new SerProtocolService(rptlProtocol);
-    playersListProvider = new ActorsListService(rptlProtocol);
-    namesProvider = new ActorsNameService(rptlProtocol);
-
     TestBed.configureTestingModule({
       providers: [ // Uses service bounded injected with RPTL protocol using mocked connection
-        { provide: SerProtocolService, useValue: serProtocol },
-        { provide: ActorsListService, useValue: playersListProvider },
-        { provide: ActorsNameService, useValue: namesProvider }
+        { provide: RptlProtocolService, useValue: rptlProtocol }
       ]
     });
 
