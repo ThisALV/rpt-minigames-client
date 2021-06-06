@@ -1,12 +1,12 @@
-import { MinigameType, SquareState } from './minigame.service';
+import { MinigameType, SquareState } from './minigame-enums';
 
-/*
- * Shortcuts for `SquareState` enum values inside grid.
- */
 
-const WHITE: SquareState = SquareState.WHITE;
-const BLACK: SquareState = SquareState.BLACK;
-const EMPTY: SquareState = SquareState.FREE;
+/// Shortcut for `SquareState.WHITE` value inside grid
+export const WHITE: SquareState = SquareState.WHITE;
+/// Shortcut for `SquareState.BLACK` value inside grid
+export const BLACK: SquareState = SquareState.BLACK;
+/// Shortcut for `SquareState.FREE` value inside grid
+export const EMPTY: SquareState = SquareState.FREE;
 
 
 /**

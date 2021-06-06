@@ -11,6 +11,7 @@ import {
 import { Observable, Subject } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { initialGrids } from './initial-grids';
+import { MinigameType, SquareState } from './minigame-enums';
 
 
 /**
@@ -20,22 +21,6 @@ export class BadMinigameState extends Error {
   constructor(message: string) {
     super(message);
   }
-}
-
-
-/**
- * Represents each RpT Minigame available.
- */
-export enum MinigameType {
-  ACORES, BERMUDES, CANARIES
-}
-
-
-/**
- * Represents a state for a given square inside grid.
- */
-export enum SquareState {
-  FREE, WHITE, BLACK
 }
 
 
