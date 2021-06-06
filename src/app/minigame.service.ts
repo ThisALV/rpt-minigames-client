@@ -152,12 +152,12 @@ export class MinigameService extends SerService {
     switch (command) {
       case 'START':
         // Parses white & black players actor UID arguments
-        const parsedPlayers = new CommandParser(parsedCommand.unparsed).parseTo([
+        const parsedPlayers = parsedCommand.parseTo([
           { name: 'white', type: Number }, { name: 'black', type: Number }
         ]);
 
         // Defines current players as minigame is running since now
-        this.players = parsedPlayers.parsedData; // white & black automatically assigned
+        this.players = { white: parsedPlayers.parsedData.white, black: parsedPlayers.parsedData.black };
         // Now that players is defined, we notify about new minigame state
         this.started.next(true);
 
@@ -169,13 +169,13 @@ export class MinigameService extends SerService {
         break;
       case 'ROUND_FOR':
         // Parses arg which is either WHITE or BLACK, and emits the appropriate UID for that next player
-        const parsedNextPlayer = new CommandParser(parsedCommand.unparsed).parseTo([{ name: 'actor', type: this.playerToUid }]);
+        const parsedNextPlayer = parsedCommand.parseTo([{ name: 'actor', type: this.playerToUid }]);
         this.currentPlayer.next(parsedNextPlayer.parsedData.actor.uid);
 
         break;
       case 'SQUARE_STATE':
         // Parses coordinates and state for square being updated
-        const parsedSquareUpdate = new CommandParser(parsedCommand.unparsed).parseTo([
+        const parsedSquareUpdate = parsedCommand.parseTo([
           { name: 'squareLine', type: Number }, { name: 'squareColumn', type: Number }, { name: 'updatedState', type: SquareStateParser }
         ]);
 
@@ -188,7 +188,7 @@ export class MinigameService extends SerService {
         break;
       case 'MOVED':
         // Parses coordinates describing movement of selected pawn
-        const parsedMovement = new CommandParser(parsedCommand.unparsed).parseTo([
+        const parsedMovement = parsedCommand.parseTo([
           { name: 'fromLine', type: Number }, { name: 'fromColumn', type: Number },
           { name: 'toLine', type: Number }, { name: 'toColumn', type: Number }
         ]);
@@ -202,16 +202,17 @@ export class MinigameService extends SerService {
         break;
       case 'PAWN_COUNTS':
         // Parses pawns count for each player, white then black
-        const parsedPawnCounts = new CommandParser(parsedCommand.unparsed).parseTo([
+        const parsedPawnCounts = parsedCommand.parseTo([
           { name: 'white', type: Number }, { name: 'black', type: Number }
         ]);
 
-        this.pawnCounts.next(parsedPawnCounts.parsedData); // Direct assignation is available because of white & black pawns
+        // Passes new parsed pawn counts
+        this.pawnCounts.next({ white: parsedPawnCounts.parsedData.white, black: parsedPawnCounts.parsedData.black });
 
         break;
       case 'VICTORY_FOR':
         // Parses arg which is either WHITE or BLACK, and emits the appropriate UID for that player who won the minigame
-        const parsedWinner = new CommandParser(parsedCommand.unparsed).parseTo([{ name: 'actor', type: this.playerToUid }]);
+        const parsedWinner = parsedCommand.parseTo([{ name: 'actor', type: this.playerToUid }]);
 
         this.winner.next(parsedWinner.parsedData.actor.uid);
 

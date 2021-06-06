@@ -99,21 +99,21 @@ export class LobbyService extends SerService {
     switch (command) {
       case 'READY_PLAYER': { // Case scope blocks required because of parsedUid local const
         // 1 arg: player actor UID
-        const parsedUid = new CommandParser(parsedCommand.unparsed).parseTo(uidArgumentScheme);
+        const parsedUid = parsedCommand.parseTo(uidArgumentScheme);
         this.players[parsedUid.parsedData.uid].isReady = true;
         this.updatePlayersArraySubject(); // Passes array with new data into subject
 
         break;
       } case 'WAITING_FOR_PLAYER': {
         // 1 arg: player actor UID
-        const parsedUid = new CommandParser(parsedCommand.unparsed).parseTo(uidArgumentScheme);
+        const parsedUid = parsedCommand.parseTo(uidArgumentScheme);
         this.players[parsedUid.parsedData.uid].isReady = false;
         this.updatePlayersArraySubject(); // Passes array with new data into subject
 
         break;
       } case 'BEGIN_COUNTDOWN':
         // 1 arg: countdown delay in ms
-        const parsedDelayMs = new CommandParser(parsedCommand.unparsed).parseTo([{ name: 'delayMs', type: Number }]);
+        const parsedDelayMs = parsedCommand.parseTo([{ name: 'delayMs', type: Number }]);
 
         this.currentCountdown = parsedDelayMs.parsedData.delayMs; // Saves countdown
         this.starting.next(true); // Updates state: Lobby minigame is now starting, not started
