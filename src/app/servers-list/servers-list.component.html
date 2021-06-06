@@ -1,0 +1,17 @@
+<div class="servers-list">
+  <div class="server" *ngFor="let server of serversStatus">
+    <div class="server-details">
+      <span class="name">{{server.name}}</span> | <span class="game">{{server.gameName}}</span>
+    </div>
+
+    <div class="availability">
+      <div *ngIf="server.status === undefined; else unavailable" class="available">
+        Status: <span class="status">{{server.status.currentActors}}/{{server.status.actorsLimit}}</span>
+      </div>
+
+      <ng-template #unavailable class="unavailable">
+        Could not get server status.
+      </ng-template>
+    </div>
+  </div>
+</div>
