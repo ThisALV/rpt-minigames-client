@@ -325,4 +325,11 @@ export class MinigameService extends SerService {
   getCurrentPlayer(): Observable<number> {
     return this.currentPlayer;
   }
+
+  /**
+   * @returns Observable for pawns count of each player.
+   */
+  getPawnCounts(): Observable<PlayersPawnCounts> {
+    return this.pawnCounts;
+  }
 }
