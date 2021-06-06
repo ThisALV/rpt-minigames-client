@@ -59,7 +59,7 @@ describe('ChatService', () => {
   describe('send()', () => {
     it('should send a SR command with message content', () => {
       // Sends 3 messages
-      service.send('Hello world');
+      service.send('Hello world!');
       service.send('ThisALV');
       service.send('The third message');
 
