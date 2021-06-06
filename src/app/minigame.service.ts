@@ -182,7 +182,7 @@ export class MinigameService extends SerService {
         const update = parsedSquareUpdate.parsedData;
         this.updatedSquares.next({
           square: { lineNumber: update.squareLine, columnNumber: update.squareColumn },
-          updatedState: update.updatedState
+          updatedState: update.updatedState.enumValue
         });
 
         break;
