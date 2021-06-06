@@ -35,8 +35,9 @@ export class ChatService extends SerService {
     // Parses command
     const parsedCommand = new CommandParser(chatCommand).parseTo([{ name: 'command', type: String }]);
 
-    // Primitive-value convertion required as CommandParsed call new()
-    if (String(parsedCommand) !== 'MESSAGE_FROM') { // The only available Service command for Chat is MESSAGE_FROM to receive a message
+    // Primitive-value conversion required as CommandParsed call new()
+    // The only available Service command for Chat is MESSAGE_FROM to receive a message
+    if (String(parsedCommand.parsedData.command) !== 'MESSAGE_FROM') {
       throw new BadSerCommand('Only MESSAGE_FROM is known for Chat');
     }
 
