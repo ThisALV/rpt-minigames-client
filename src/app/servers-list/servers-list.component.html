@@ -1,4 +1,6 @@
 <div class="servers-list">
+  <button class="update" (click)="checkout()">Update status</button>
+
   <div class="server" *ngFor="let server of serversStatus"
        [ngClass]="{'selected': server.name === selectedServerName}" (click)="select(server.name)">
 
