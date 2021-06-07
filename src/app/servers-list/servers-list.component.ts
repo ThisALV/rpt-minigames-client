@@ -77,13 +77,16 @@ export class ServersListComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Updates array with checkout() method response from ServersList service.
+   * Initializes then update array with checkout() method response from ServersList service.
    */
   ngOnInit(): void {
     // Saves subscription to stop it when component is destroyed
     this.serversStatusSubscription = this.serversStatusProvider.getListStatus().subscribe({
       next: (updatedServersStatus: GameServer[]) => this.serversStatus = updatedServersStatus
     });
+
+    // Updates a first time to retrieve at servers list at least one time
+    this.checkout();
   }
 
   /**
