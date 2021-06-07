@@ -4,6 +4,9 @@ import { GameServer } from '../game-server';
 import { ServersListService } from '../servers-list.service';
 import { RuntimeErrorsService } from '../runtime-errors.service';
 import { rptlConnectionFor } from '../game-server-connection';
+import { servers } from '../servers.json';
+import { GameServerResolutionService } from '../game-server-resolution.service';
+import { RptlProtocolService } from 'rpt-webapp-client';
 
 
 // Used by ServersList component to provides a real RPTL configured WebSocket connection handling error with given RuntimeErrors service
@@ -28,10 +31,28 @@ export class ServersListComponent implements OnInit, OnDestroy {
    */
   serversStatus: GameServer[];
 
+  /**
+   * Name of game server inside `serversStatus` which is currently selected, if any.
+   */
+  selectedServerName?: string;
+
+  private readonly serverPorts: { [serverName: string]: number }; // Registry of port for each known game server
+
   private serversStatusSubscription?: Subscription; // When uninitialized, no longer wait for requested game servers status
 
-  constructor(private readonly serversStatusProvider: ServersListService) {
+  constructor(
+    private readonly serversStatusProvider: ServersListService,
+    private readonly urlsProvider: GameServerResolutionService,
+    private readonly mainAppProtocol: RptlProtocolService,
+    private readonly mainAppErrorsHandler: RuntimeErrorsService)
+  {
     this.serversStatus = []; // No server to show while no update has been done
+
+    // Initializes registry for every known port accessible from its name, make easier to check for a selected server URL later
+    this.serverPorts = {};
+    for (const gameServer of servers) {
+      this.serverPorts[gameServer.name] = gameServer.port; // Associates server port with its name
+    }
   }
 
   /**
@@ -39,6 +60,20 @@ export class ServersListComponent implements OnInit, OnDestroy {
    */
   checkout(): void {
     this.serversStatusProvider.update(rptlConnectionFactory); // Updates using WebSocket connection
+  }
+
+  /**
+   * Connects RPTL protocol WebSocket to given game server.
+   *
+   * @param serverName Name for server to connect with
+   */
+  select(serverName: string): void {
+    // Retrieves URL from provider using port from initialized game servers DB
+    const serverUrl = this.urlsProvider.resolve(this.serverPorts[serverName]);
+
+    // Connects to server using resolved URL from selected name
+    this.mainAppProtocol.beginSession(rptlConnectionFor(serverUrl, this.mainAppErrorsHandler));
+    // App component will see we connected to RPTL on unregistered mode and will register us as expected
   }
 
   /**

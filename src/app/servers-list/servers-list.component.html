@@ -1,5 +1,7 @@
 <div class="servers-list">
-  <div class="server" *ngFor="let server of serversStatus">
+  <div class="server" *ngFor="let server of serversStatus"
+       [ngClass]="{'selected': server.name === selectedServerName}" (click)="select(server.name)">
+
     <div class="server-details">
       <span class="name">{{server.name}}</span> | <span class="game">{{server.gameName}}</span>
     </div>
@@ -13,5 +15,6 @@
         Could not get server status.
       </ng-template>
     </div>
+
   </div>
 </div>
