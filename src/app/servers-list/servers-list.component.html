@@ -9,7 +9,7 @@
     </div>
 
     <div class="availability">
-      <div *ngIf="server.status === undefined; else unavailable" class="available">
+      <div *ngIf="server.status !== undefined; else unavailable" class="available">
         Status: <span class="status">{{server.status.currentActors}}/{{server.status.actorsLimit}}</span>
       </div>
 
