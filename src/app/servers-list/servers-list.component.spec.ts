@@ -6,7 +6,6 @@ import { Availability, RptlProtocolService, RptlState } from 'rpt-webapp-client'
 import { ServersListService } from '../servers-list.service';
 import { rptlConnectionFor } from '../game-server-connection';
 import { MockedMessagingSubject, unexpected } from '../testing-helpers';
-import { first } from 'rxjs/operators';
 import createSpy = jasmine.createSpy;
 import { GameServerResolutionService } from '../game-server-resolution.service';
 
@@ -118,7 +117,7 @@ describe('ServersListComponent', () => {
   describe('select()', () => {
     it('should connect to selected server and begin RPTL session with that connection', waitForAsync(() => {
       let latestState: RptlState | undefined;
-      rptlProtocol.getState().pipe(first()).subscribe({ // The first thing select() should do is to connect with RPTL protocol
+      rptlProtocol.getState().subscribe({ // The first thing select() should do is to connect with RPTL protocol
         next: (state: RptlState) => latestState = state,
         complete: unexpected,
         error: unexpected
