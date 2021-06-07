@@ -4,9 +4,8 @@ import { GameServer } from '../game-server';
 import { Observable, Subject } from 'rxjs';
 import { Availability, RptlProtocolService, RptlState } from 'rpt-webapp-client';
 import { ServersListService } from '../servers-list.service';
-import { rptlConnectionFor } from '../game-server-connection';
+import { SHARED_CONNECTION_FACTORY } from '../game-server-connection';
 import { MockedMessagingSubject, unexpected } from '../testing-helpers';
-import createSpy = jasmine.createSpy;
 import { GameServerResolutionService } from '../game-server-resolution.service';
 
 
@@ -52,17 +51,19 @@ describe('ServersListComponent', () => {
   let component: ServersListComponent;
   let fixture: ComponentFixture<ServersListComponent>;
 
-  // Mocks connection to keep trace of latest required game server URL, then return an accessible mocked connection
   let connection: MockedMessagingSubject; // Mocked connection returned by spied rptlConnectionFor()
   let latestConnectedUrl: string | undefined; // Last URL argument gave to spied rptlConnectionFor()
-  createSpy('rptlConnectionFor').and.callFake((serverUrl: string): Subject<string> => {
-    latestConnectedUrl = serverUrl;
-    return connection;
-  });
+
 
   beforeEach(async () => {
     mockedServersListService = new MockedServersListProvider();
     connection = new MockedMessagingSubject();
+
+    // Mocks connection to keep trace of latest required game server URL, then return an accessible mocked connection
+    spyOn(SHARED_CONNECTION_FACTORY, 'rptlConnectionFor').and.callFake((serverUrl: string): Subject<string> => {
+      latestConnectedUrl = serverUrl;
+      return connection;
+    });
 
     // Initializes component decorator
     await TestBed.configureTestingModule({

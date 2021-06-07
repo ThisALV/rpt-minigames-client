@@ -61,20 +61,33 @@ class RptlWebsocketConfig implements WebSocketSubjectConfig<string> {
 
 
 /**
- * @param url Websocket protocol URL for server to be connected with
- * @param runtimeErrors Service receiving every error relative to an abnormal WS connection closure
+ * Contains a method providing the RPTL connection WebSocket subject
  *
- * @returns A `WebSocketSubject` compatible with `RptlProtocolService`, that is, configured to not use JSON data but textual data inside
- * messages instead, and to set `isStopped` flag when it is closed.
+ * Encapsulation inside class is required for Jasmine spies mocking.
  */
-export function rptlConnectionFor(url: string, runtimeErrors: RuntimeErrorsService): WebSocketSubject<string> {
-  // Must be initialized separately to have a connection field accessible later, when webSocket() will have been called
-  const closeFrameObserver: RptlWebsocketClosureObserver = new RptlWebsocketClosureObserver(runtimeErrors);
-  // Creates connection with special RPTL behavior configuration
-  const connection: WebSocketSubject<string> = webSocket(new RptlWebsocketConfig(url, closeFrameObserver));
+export class RptlConnectionFactory {
+  /**
+   * @param url Websocket protocol URL for server to be connected with
+   * @param runtimeErrors Service receiving every error relative to an abnormal WS connection closure
+   *
+   * @returns A `WebSocketSubject` compatible with `RptlProtocolService`, that is, configured to not use JSON data but textual data inside
+   * messages instead, and to set `isStopped` flag when it is closed.
+   */
+  rptlConnectionFor(url: string, runtimeErrors: RuntimeErrorsService): Subject<string> {
+    // Must be initialized separately to have a connection field accessible later, when webSocket() will have been called
+    const closeFrameObserver: RptlWebsocketClosureObserver = new RptlWebsocketClosureObserver(runtimeErrors);
+    // Creates connection with special RPTL behavior configuration
+    const connection: WebSocketSubject<string> = webSocket(new RptlWebsocketConfig(url, closeFrameObserver));
 
-  // Assigns established connection subject to be stopped as soon as connection is closed
-  closeFrameObserver.connection = connection;
+    // Assigns established connection subject to be stopped as soon as connection is closed
+    closeFrameObserver.connection = connection;
 
-  return connection;
+    return connection;
+  }
 }
+
+
+/**
+ * Use this shared object to call a spy-mockable `rptlConnectionFor()` method.
+ */
+export const SHARED_CONNECTION_FACTORY: RptlConnectionFactory = new RptlConnectionFactory();

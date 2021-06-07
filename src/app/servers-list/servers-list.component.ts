@@ -3,7 +3,7 @@ import { Subject, Subscription } from 'rxjs';
 import { GameServer } from '../game-server';
 import { ServersListService } from '../servers-list.service';
 import { RuntimeErrorsService } from '../runtime-errors.service';
-import { rptlConnectionFor } from '../game-server-connection';
+import { SHARED_CONNECTION_FACTORY } from '../game-server-connection';
 import { servers } from '../servers.json';
 import { GameServerResolutionService } from '../game-server-resolution.service';
 import { RptlProtocolService } from 'rpt-webapp-client';
@@ -11,7 +11,7 @@ import { RptlProtocolService } from 'rpt-webapp-client';
 
 // Used by ServersList component to provides a real RPTL configured WebSocket connection handling error with given RuntimeErrors service
 function rptlConnectionFactory(currentServerUrl: string, errorsHandler: RuntimeErrorsService): Subject<string> {
-  return rptlConnectionFor(currentServerUrl, errorsHandler);
+  return SHARED_CONNECTION_FACTORY.rptlConnectionFor(currentServerUrl, errorsHandler);
 }
 
 
@@ -72,7 +72,7 @@ export class ServersListComponent implements OnInit, OnDestroy {
     const serverUrl = this.urlsProvider.resolve(this.serverPorts[serverName]);
 
     // Connects to server using resolved URL from selected name
-    this.mainAppProtocol.beginSession(rptlConnectionFor(serverUrl, this.mainAppErrorsHandler));
+    this.mainAppProtocol.beginSession(SHARED_CONNECTION_FACTORY.rptlConnectionFor(serverUrl, this.mainAppErrorsHandler));
     // App component will see we connected to RPTL on unregistered mode and will register us as expected
   }
 
