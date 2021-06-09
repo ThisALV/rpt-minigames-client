@@ -50,3 +50,4 @@ accessible_localhost.key
 
 # Generate artifacts
 docs/
+decrypt.log
