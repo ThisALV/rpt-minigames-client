@@ -9,6 +9,14 @@ describe('AppComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ RouterTestingModule ],
       declarations: [ AppComponent, ServersListComponent ],
+      providers: [
+        {
+          // Mocks a web application running on https://localhost/, because GameServerResolutionService requires it to formats URLs
+          provide: Window, useValue: {
+            location: { protocol: 'https:', hostname: 'localhost' }
+          }
+        }
+      ]
     }).compileComponents();
   });
 
