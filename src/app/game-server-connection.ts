@@ -82,6 +82,10 @@ export class RptlConnectionFactory {
     // Assigns established connection subject to be stopped as soon as connection is closed
     closeFrameObserver.connection = connection;
 
+    connection.subscribe({
+      error: () => connection.isStopped = true
+    });
+
     return connection;
   }
 }
