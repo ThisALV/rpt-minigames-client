@@ -5,7 +5,7 @@ import { MonoTypeOperatorFunction, Observable, Subject } from 'rxjs';
 import { GameServerResolutionService } from './game-server-resolution.service';
 import { GameServer } from './game-server';
 import { RuntimeErrorsService } from './runtime-errors.service';
-import { delay } from 'rxjs/operators';
+import { delay, first } from 'rxjs/operators';
 import { ServerStatusService } from './server-status.service';
 
 
@@ -69,7 +69,7 @@ export class ServersListService {
 
       const context: ServersListService = this;
       // The next checkout operation result will be pushed into recursively passed results array
-      this.statusProvider.getNextResponse().subscribe({
+      this.statusProvider.getNextResponse().pipe(first()).subscribe({
         next(status?: Availability): void {
           // Makes recursive call to the next game server
           context.updateNext(connection, delayPipeOperator, updatedStatus.concat(
