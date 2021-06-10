@@ -11,9 +11,12 @@ import { CheckoutResponse, ServerStatusService } from './server-status.service';
 /**
  * Mocks `ServerStatusService` to make `getNextResponse()` providing status assigned to the next element inside `operationResults` queue
  * when `checkout()` is called.
+ *
+ * It can be stopped using the `stopped` field, if so `checkout()` will no longer passes new value.
  */
 class MockedServerStatusProvider {
   readonly operationResults: CheckoutResponse[];
+  stopped: boolean;
 
   private readonly currentOperationResult: Subject<CheckoutResponse>;
   private currentResult: number;
@@ -29,6 +32,7 @@ class MockedServerStatusProvider {
     ];
 
     this.currentResult = 0; // Begins from the first configured and mocked checkout result
+    this.stopped = false;
     this.currentOperationResult = new Subject<CheckoutResponse>();
   }
 
@@ -37,9 +41,11 @@ class MockedServerStatusProvider {
     return this.currentOperationResult;
   }
 
-  /// Pushes next configured result inside queue into retrieved subject
+  /// Pushes next configured result inside queue into retrieved subject, if and only if this service isn't stopped
   checkout(): void {
-    this.currentOperationResult.next(this.operationResults[this.currentResult++]);
+    if (!this.stopped) {
+      this.currentOperationResult.next(this.operationResults[this.currentResult++]);
+    }
   }
 }
 
@@ -87,8 +93,11 @@ function mockedConnections(count: number): MockedMessagingSubject[] {
 
 describe('ServersListService', () => {
   let service: ServersListService;
+  let statusProvider: MockedServerStatusProvider; // Used to block the updating process to launch concurrent updates for the last unit test
 
   beforeEach(() => {
+    statusProvider = new MockedServerStatusProvider(); // Instance must be directly accessible to use the stopped field
+
     TestBed.configureTestingModule({
       providers: [
         {
@@ -100,7 +109,7 @@ describe('ServersListService', () => {
         },
         { // We can custom individuals servers result
           provide: ServerStatusService,
-          useClass: MockedServerStatusProvider
+          useValue: statusProvider
         }
       ]
     });
@@ -156,6 +165,8 @@ describe('ServersListService', () => {
   });
 
   it('should not be able to update concurrently', () => {
+    // Stops it so update doesn't finish immediately and we can start a concurrent update which should fail
+    statusProvider.stopped = true;
     // Starts a 1st update, params doesn't matter we just test if it is not possible to call it twice
     service.update(mockedConnectionFactory(new Array<string>(6), mockedConnections(6)));
     // Try a concurrent update while the other one is certainly still waiting for a server response
