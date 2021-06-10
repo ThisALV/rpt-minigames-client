@@ -1,4 +1,4 @@
-import { Subject } from 'rxjs';
+import { MonoTypeOperatorFunction, Observable, Subject } from 'rxjs';
 
 
 /**
@@ -85,4 +85,45 @@ export class MockedMessagingSubject extends Subject<string> {
   receive(message: string): void {
     super.next(message);
   }
+}
+
+
+/**
+ * Get an operator which blocks values from source until a value is passed to the `trigger` Subject. If a value is emitted by source
+ * after trigger, then that value will be immediately passed to returned (or delayed) Observable.
+ *
+ * @param trigger Subject which is listening for a value to stop blocking values from source Observable
+ *
+ * @returns An operator blocking while `trigger` isn't passed a value
+ */
+export function mockedDelay(trigger: Subject<undefined>): MonoTypeOperatorFunction<undefined> {
+  // Returns the operators configured to work with given trigger Subject
+  return (source: Observable<undefined>): Observable<undefined> => {
+    let sourceEmitted = false; // Set when source emits a next value
+    let triggered = false; // Set when trigger emits a next value
+
+    const delayed = new Subject<undefined>(); // Will next a value only when triggered and sourceEmitted will be set
+
+    trigger.subscribe({ // Listen for delay end to be triggered by external Subject
+      next(): void {
+        if (sourceEmitted) { // If a value is waiting to be passed, passes it immediately
+          delayed.next();
+        } else { // Else, wait a value to be passed, notifying it can be passed immediately since now
+          triggered = true;
+        }
+      }
+    });
+
+    source.subscribe({
+      next(): void {
+        if (triggered) { // If delay has expired, passes value immediately
+          delayed.next();
+        } else { // Else, wait for delay to expires to pass value
+          sourceEmitted = true;
+        }
+      }
+    });
+
+    return delayed;
+  };
 }
