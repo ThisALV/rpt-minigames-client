@@ -27,8 +27,8 @@ class MockedServerStatusProvider {
       undefined,
       undefined,
       new Availability(2, 2),
-      undefined,
-      new Availability(1, 2)
+      new Availability(1, 2),
+      undefined
     ];
 
     this.currentResult = 0; // Begins from the first configured and mocked checkout result
@@ -133,10 +133,7 @@ describe('ServersListService', () => {
       complete: unexpected
     });
 
-    expect(service.isUpdating()).toBeFalse(); // update() not called yet
-
     service.update(mockedConnectionFactory(serverUrls, connections), mockedDelay(delayTrigger));
-    expect(service.isUpdating()).toBeTrue();
 
     // Checks for all game server to have been resolved using the appropriate port in the right order
     // Comparing with the list of expected connected URLs:
@@ -149,8 +146,6 @@ describe('ServersListService', () => {
       'wss://localhost:35560/'
     );
 
-    // Update should be done & complete at that point, array should have been passed to subject
-    expect(service.isUpdating()).toBeFalse();
     expect(receivedServersStatus).toBeDefined();
     // 3 of 6 servers status fully retrieved expected, Açores #2, Bermudes #1 and Canaries #2 are incomplete because of a
     // timeout, connection and checkout errors respectively
