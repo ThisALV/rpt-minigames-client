@@ -23,6 +23,43 @@ export class CheckoutBusy extends Error {
 
 
 /**
+ * @param source Observable to filter
+ *
+ * @returns Observable emitting only the first callback invoked by `source`, no matter if it is `next`, `complete` or `error`
+ */
+function firstCallback<T>(source: Observable<T>): Observable<T> {
+  const filtered = new Subject<T>();
+
+  let callbackInvoked = false; // Will be set to true by any source callback
+
+  // Each callback checks if it is the first to be called. If and only if it is the case, it will pass the call to the filtered Subject
+  // corresponding method and notifies that no more callback should be passed through filtered Subject
+  function passOnce(callback: () => void): void {
+    if (!callbackInvoked) {
+      callbackInvoked = true;
+      callback();
+    }
+  }
+
+  source.subscribe({
+    next(value?: T): void {
+      passOnce(() => filtered.next(value));
+    },
+
+    error(err: any): void {
+      passOnce(() => filtered.error(err));
+    },
+
+    complete(): void {
+      passOnce(() => filtered.complete());
+    }
+  });
+
+  return filtered;
+}
+
+
+/**
  * Connects to a game server with given connection, sends a `CHECKOUT` RPTL command and pushes into subject the `AVAILABILITY` response
  * from server, if any, `undefined` if an error occurred.
  *
@@ -115,7 +152,8 @@ export class ServerStatusService {
         .subscribe({
           next(): void {
             // Listen for the next AVAILABILITY response from server
-            const retrievedStatusSub = context.rptlProtocol.getStatus().pipe(first()).subscribe({
+            // Observer WILL be completed after connection is closed. To avoid emission of undefined, firstCallback operator is used.
+            const retrievedStatusSub = context.rptlProtocol.getStatus().pipe(firstCallback).subscribe({
               next: (a: Availability) => result.next(a), // If status is received, passes object
               // If failed to retrieve status, because of an unexpected internal error or connection closed, passes undefined
               complete: () => result.next(undefined),
