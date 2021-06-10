@@ -89,14 +89,14 @@ export class ServerStatusService {
       next(newStatus?: Availability): void { // When the status is received or the operation timed out
         // If no RPTL error occurred and connection is still active, closes it to actually finish the checkout operation
         if (context.rptlProtocol.isSessionRunning()) {
-          context.rptlProtocol.endSession();
-
           // Waits for RPTL connection to have been effectively closed, aka waiting for server WS close frame
           const disconnectedSub = context.rptlProtocol.getState()
             .pipe(first((newState: RptlState) => newState === RptlState.DISCONNECTED))
             .subscribe({
               next: () => context.clear(newStatus) // When RPTL session is terminated, we can clear current checkout operation
             });
+
+          context.rptlProtocol.endSession(); // Closes connection with server by sending a WS close frames
 
           context.subscriptions.push(disconnectedSub);
         } else { // Already disconnected, disconnection event will not be emitted
