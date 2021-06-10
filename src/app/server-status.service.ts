@@ -39,7 +39,7 @@ export class ServerStatusService {
 
   constructor(private readonly rptlProtocol: RptlProtocolService) {
     this.nextResponse = new Subject<CheckoutResponse>();
-    this.available = false; // No checkout running at initialization
+    this.available = true; // No checkout running at initialization
     this.subscriptions = []; // No pending subscriptions as no checkout is running
   }
 
