@@ -1,23 +1,23 @@
 import { TestBed } from '@angular/core/testing';
-import { CheckoutBusy, CheckoutResponse, ServerStatusService } from './server-status.service';
-import { Availability, RptlProtocolService } from 'rpt-webapp-client';
+import { CheckoutBusy, CheckoutResponse, CheckoutRptlProtocolService, ServerStatusService } from './server-status.service';
+import { Availability } from 'rpt-webapp-client';
 import { expectArrayToBeEqual, mockedDelay, MockedMessagingSubject, unexpected } from './testing-helpers';
 import { Subject } from 'rxjs';
 
 
 describe('ServerStatusService', () => {
   let connection: MockedMessagingSubject; // Mocked connection, used by RPTL protocol to read data from
-  let rptlProtocol: RptlProtocolService; // It will use a mocked connection to emulates the server behavior
+  let rptlProtocol: CheckoutRptlProtocolService; // It will use a mocked connection to emulates the server behavior
 
   let service: ServerStatusService;
 
   beforeEach(() => {
     connection = new MockedMessagingSubject();
-    rptlProtocol = new RptlProtocolService();
+    rptlProtocol = new CheckoutRptlProtocolService();
 
     TestBed.configureTestingModule({
       providers: [ // Uses service bounded injected with RPTL protocol using mocked connection
-        { provide: RptlProtocolService, useValue: rptlProtocol }
+        { provide: CheckoutRptlProtocolService, useValue: rptlProtocol }
       ]
     });
 

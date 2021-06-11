@@ -6,6 +6,16 @@ import { first } from 'rxjs/operators';
 
 
 /**
+ * This class allow us to discerns which RPTL protocol uses the main application connection and which one is specialized for CHECKOUT
+ * operations.
+ *
+ * With that, we can use 2 WebSocket streams at the same time for CHECKOUT and main application.
+ */
+@Injectable({ providedIn: 'root' })
+export class CheckoutRptlProtocolService extends RptlProtocolService {}
+
+
+/**
  * Object provided by service subject to passes retrieved game server status.
  */
 export type CheckoutResponse = Availability | undefined;
@@ -74,7 +84,7 @@ export class ServerStatusService {
   private subscriptions: Subscription[]; // Every subscribe() call performed inside a checkout operation must be closed at the end
   private available: boolean; // Indicates if a current checkout is running or not
 
-  constructor(private readonly rptlProtocol: RptlProtocolService) {
+  constructor(private readonly rptlProtocol: CheckoutRptlProtocolService) {
     this.nextResponse = new Subject<CheckoutResponse>();
     this.available = true; // No checkout running at initialization
     this.subscriptions = []; // No pending subscriptions as no checkout is running

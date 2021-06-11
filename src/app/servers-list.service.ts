@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { servers } from './servers.json';
-import { Availability, RptlProtocolService } from 'rpt-webapp-client';
+import { Availability } from 'rpt-webapp-client';
 import { MonoTypeOperatorFunction, Observable, Subject } from 'rxjs';
 import { GameServerResolutionService } from './game-server-resolution.service';
 import { GameServer } from './game-server';
@@ -41,15 +41,14 @@ export class ServersListService {
   /**
    * Constructs a service which is not waiting for server status and without any retrieved status for now.
    *
-   * @param rptlProtocol Protocol to send CHECKOUT commands with
    * @param urlProvider Get WS URL for game servers using this service
    * @param statusProvider Service to perform checkout operation on each service one-by-one
    * @param errorHandler Errors when trying to establish connection with the next game server
    */
-  constructor(private readonly rptlProtocol: RptlProtocolService,
-              private readonly urlProvider: GameServerResolutionService,
-              private readonly statusProvider: ServerStatusService,
-              private readonly errorHandler: RuntimeErrorsService)
+  constructor(
+    private readonly urlProvider: GameServerResolutionService,
+    private readonly statusProvider: ServerStatusService,
+    private readonly errorHandler: RuntimeErrorsService)
   {
     this.serversStatus = new Subject<GameServer[]>();
   }
