@@ -5,7 +5,7 @@ import { Observable, Subject } from 'rxjs';
 import { Availability, RptlProtocolService, RptlState } from 'rpt-webapp-client';
 import { ServersListService } from '../servers-list.service';
 import { SHARED_CONNECTION_FACTORY } from '../game-server-connection';
-import { MockedMessagingSubject, unexpected } from '../testing-helpers';
+import { expectArrayToBeEqual, MockedMessagingSubject, unexpected } from '../testing-helpers';
 import { GameServerResolutionService } from '../game-server-resolution.service';
 
 
@@ -116,21 +116,42 @@ describe('ServersListComponent', () => {
   });
 
   describe('select()', () => {
-    it('should connect to selected server and begin RPTL session with that connection', waitForAsync(() => {
-      let latestState: RptlState | undefined;
-      rptlProtocol.getState().subscribe({ // The first thing select() should do is to connect with RPTL protocol
-        next: (state: RptlState) => latestState = state,
+    let stateLogging: RptlState[]; // Both unit test cases will require to check for the RptlState history
+
+    beforeEach(() => {
+      stateLogging = []; // Resets history for current test
+
+      rptlProtocol.getState().subscribe({ // Provides current RPTL state for each unit test case
+        next: (state: RptlState) =>  stateLogging.push(state),
         complete: unexpected,
         error: unexpected
       });
+    });
 
+    it('should connect to selected server and begin RPTL session with that connection', waitForAsync(() => {
       // Connects to the 3rd game server
       component.select('Bermudes #1');
 
       fixture.whenStable().then(() => {
-        expect(latestState).toEqual(RptlState.UNREGISTERED); // RPTL session should have begun because we should be connected to server
+        expectArrayToBeEqual(stateLogging, RptlState.UNREGISTERED); // Client should have been connected with server
         expect(latestConnectedUrl).toEqual('wss://localhost:35557/'); // Expected server we connect with to be the 3dr game server
       });
     }));
+
+    it('should disconnect from previous connected game server if any', () => {
+      // Connects to a first game server
+      component.select('Bermudes #2');
+
+      // A new connection must be used because the original one is now stopped
+      connection = new MockedMessagingSubject();
+      // Connects to a second server which should disconnected us from the first
+      component.select('Açores #1');
+
+      fixture.whenStable().then(() => {
+        // Client should have been disconnected from the first server before the second connection
+        expectArrayToBeEqual(stateLogging, RptlState.UNREGISTERED, RptlState.DISCONNECTED, RptlState.UNREGISTERED);
+        expect(latestConnectedUrl).toEqual('wss://localhost:35555/'); // The last selected server is the first inside list
+      });
+    });
   });
 });
