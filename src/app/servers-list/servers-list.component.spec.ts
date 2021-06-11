@@ -168,16 +168,5 @@ describe('ServersListComponent', () => {
         expect(latestConnectedUrl).toEqual('wss://localhost:35555/'); // The last selected server is the first inside list
       });
     }));
-
-    it('should do nothing if servers status list is updating', waitForAsync(() => {
-      mockedServersListService.updating = true; // Mocks that servers list status is currently updating
-      component.select('Açores #2'); // Connects to the second game server
-      expect(component.selectedServerName).toBeUndefined(); // No server should have been selected because of current update
-
-      fixture.whenStable().then(() => {
-        expect(stateLogging).toHaveSize(0); // select() remaining code shouldn't have been executed
-        expect(latestConnectedUrl).toBeUndefined(); // No connection, select() returned before it called beginSession()
-      });
-    }));
   });
 });
