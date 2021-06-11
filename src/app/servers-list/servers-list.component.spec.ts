@@ -92,9 +92,11 @@ describe('ServersListComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create with updated game servers list', waitForAsync(() => {
+  it('should create component with updated game servers list and without any selected one', waitForAsync(() => {
     expect(component).toBeTruthy();
 
+    // No game server is selected at the beginning of the component lifecycle
+    expect(component.selectedServerName).toBeUndefined();
     // When initialization updating is done, every listed server should be listed by component
     fixture.whenStable().then(() => expect(component.serversStatus).toEqual(SERVERS));
   }));
@@ -131,6 +133,7 @@ describe('ServersListComponent', () => {
     it('should connect to selected server and begin RPTL session with that connection', waitForAsync(() => {
       // Connects to the 3rd game server
       component.select('Bermudes #1');
+      expect(component.selectedServerName).toEqual('Bermudes #1');
 
       fixture.whenStable().then(() => {
         expectArrayToBeEqual(stateLogging, RptlState.UNREGISTERED); // Client should have been connected with server
@@ -141,11 +144,13 @@ describe('ServersListComponent', () => {
     it('should disconnect from previous connected game server if any', () => {
       // Connects to a first game server
       component.select('Bermudes #2');
+      expect(component.selectedServerName).toEqual('Bermudes #2');
 
       // A new connection must be used because the original one is now stopped
       connection = new MockedMessagingSubject();
       // Connects to a second server which should disconnected us from the first
       component.select('Açores #1');
+      expect(component.selectedServerName).toEqual('Açores #1');
 
       fixture.whenStable().then(() => {
         // Client should have been disconnected from the first server before the second connection

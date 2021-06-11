@@ -78,6 +78,7 @@ export class ServersListComponent implements OnInit, OnDestroy {
 
     // Connects to server using resolved URL from selected name
     this.mainAppProtocol.beginSession(SHARED_CONNECTION_FACTORY.rptlConnectionFor(serverUrl, this.mainAppErrorsHandler));
+    this.selectedServerName = serverName;
     // App component will see we connected to RPTL on unregistered mode and will register us as expected
   }
 
