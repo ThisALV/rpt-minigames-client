@@ -141,7 +141,7 @@ describe('ServersListComponent', () => {
       });
     }));
 
-    it('should disconnect from previous connected game server if any', () => {
+    it('should disconnect from previous connected game server if any', waitForAsync(() => {
       // Connects to a first game server
       component.select('Bermudes #2');
       expect(component.selectedServerName).toEqual('Bermudes #2');
@@ -157,6 +157,6 @@ describe('ServersListComponent', () => {
         expectArrayToBeEqual(stateLogging, RptlState.UNREGISTERED, RptlState.DISCONNECTED, RptlState.UNREGISTERED);
         expect(latestConnectedUrl).toEqual('wss://localhost:35555/'); // The last selected server is the first inside list
       });
-    });
+    }));
   });
 });
