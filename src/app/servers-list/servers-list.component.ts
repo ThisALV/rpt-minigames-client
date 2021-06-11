@@ -65,9 +65,15 @@ export class ServersListComponent implements OnInit, OnDestroy {
   /**
    * Connects RPTL protocol WebSocket to given game server, disconnecting from previous game server if required.
    *
+   * @note Does nothing if a servers status update is running.
+   *
    * @param serverName Name for server to connect with
    */
   select(serverName: string): void {
+    if (this.serversStatusProvider.isUpdating()) {
+      return;
+    }
+
     // Retrieves URL from provider using port from initialized game servers DB
     const serverUrl = this.urlsProvider.resolve(this.serverPorts[serverName]);
 

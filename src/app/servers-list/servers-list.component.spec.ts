@@ -24,12 +24,15 @@ const SERVERS: GameServer[] = [
 class MockedServersListProvider {
   /// Must be reset for each instance as its content could be modified for testing purposes
   readonly providedServers: GameServer[];
+  /// Mocks provider isUpdating() returned value
+  updating: boolean;
 
   private readonly serversList: Subject<GameServer[]>;
 
   /// Initializes `providesServers` with `SERVERS` default array
   constructor() {
     this.providedServers = SERVERS;
+    this.updating = false;
     this.serversList = new Subject<GameServer[]>();
   }
 
@@ -41,6 +44,11 @@ class MockedServersListProvider {
   /// Provides `providedServers` to `getListStatus()`
   update(): void {
     this.serversList.next(this.providedServers);
+  }
+
+  /// Returns `updating` field
+  isUpdating(): boolean {
+    return this.updating;
   }
 }
 
@@ -58,6 +66,8 @@ describe('ServersListComponent', () => {
   beforeEach(async () => {
     mockedServersListService = new MockedServersListProvider();
     connection = new MockedMessagingSubject();
+    // Resets connection URL for each new unit test case
+    latestConnectedUrl = undefined;
 
     // Mocks connection to keep trace of latest required game server URL, then return an accessible mocked connection
     spyOn(SHARED_CONNECTION_FACTORY, 'rptlConnectionFor').and.callFake((serverUrl: string): Subject<string> => {
@@ -156,6 +166,17 @@ describe('ServersListComponent', () => {
         // Client should have been disconnected from the first server before the second connection
         expectArrayToBeEqual(stateLogging, RptlState.UNREGISTERED, RptlState.DISCONNECTED, RptlState.UNREGISTERED);
         expect(latestConnectedUrl).toEqual('wss://localhost:35555/'); // The last selected server is the first inside list
+      });
+    }));
+
+    it('should do nothing if servers status list is updating', waitForAsync(() => {
+      mockedServersListService.updating = true; // Mocks that servers list status is currently updating
+      component.select('Açores #2'); // Connects to the second game server
+      expect(component.selectedServerName).toBeUndefined(); // No server should have been selected because of current update
+
+      fixture.whenStable().then(() => {
+        expect(stateLogging).toHaveSize(0); // select() remaining code shouldn't have been executed
+        expect(latestConnectedUrl).toBeUndefined(); // No connection, select() returned before it called beginSession()
       });
     }));
   });
