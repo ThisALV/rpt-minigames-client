@@ -1,0 +1,6 @@
+<div class="runtime-errors">
+  <div class="error" *ngFor="let error of displayedErrors">
+    <div class="message">{{error.message}}</div>
+    <div class="close" (click)="hide(error.uid)">&cross;</div>
+  </div>
+</div>
