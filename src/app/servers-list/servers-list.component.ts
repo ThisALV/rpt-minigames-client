@@ -6,7 +6,8 @@ import { RuntimeErrorsService } from '../runtime-errors.service';
 import { SHARED_CONNECTION_FACTORY } from '../game-server-connection';
 import { servers } from '../servers.json';
 import { GameServerResolutionService } from '../game-server-resolution.service';
-import { RptlProtocolService } from 'rpt-webapp-client';
+import { RptlProtocolService, RptlState } from 'rpt-webapp-client';
+import { first } from 'rxjs/operators';
 
 
 // Used by ServersList component to provides a real RPTL configured WebSocket connection handling error with given RuntimeErrors service
@@ -39,6 +40,7 @@ export class ServersListComponent implements OnInit, OnDestroy {
   private readonly serverPorts: { [serverName: string]: number }; // Registry of port for each known game server
 
   private serversStatusSubscription?: Subscription; // When uninitialized, no longer wait for requested game servers status
+  private sessionEndSubscription?: Subscription; // When uninitialized, doesn't wait for previously selected session to end
 
   constructor(
     private readonly serversStatusProvider: ServersListService,
@@ -53,6 +55,14 @@ export class ServersListComponent implements OnInit, OnDestroy {
     for (const gameServer of servers) {
       this.serverPorts[gameServer.name] = gameServer.port; // Associates server port with its name
     }
+  }
+
+  /// Begin a session with WS connection on given URL and applies selected class to appropriate HTML element
+  private connectWith(serverUrl: string, serverName: string): void {
+    // Connects to server using resolved URL from selected name
+    this.mainAppProtocol.beginSession(SHARED_CONNECTION_FACTORY.rptlConnectionFor(serverUrl, this.mainAppErrorsHandler));
+    this.selectedServerName = serverName;
+    // App component will see we connected to RPTL on unregistered mode and will register us as expected
   }
 
   /**
@@ -73,13 +83,17 @@ export class ServersListComponent implements OnInit, OnDestroy {
 
     // If URL has been successfully resolved, we disconnect from current server if we're currently connected
     if (this.mainAppProtocol.isSessionRunning()) {
-      this.mainAppProtocol.endSession();
-    }
+      // We must wait to be logged out before beginning a new session
+      this.sessionEndSubscription = this.mainAppProtocol.getState().pipe(
+        first((s: RptlState) => s === RptlState.DISCONNECTED) // Session ends when connection is stopped
+      ).subscribe({
+        next: () => this.connectWith(serverUrl, serverName)
+      });
 
-    // Connects to server using resolved URL from selected name
-    this.mainAppProtocol.beginSession(SHARED_CONNECTION_FACTORY.rptlConnectionFor(serverUrl, this.mainAppErrorsHandler));
-    this.selectedServerName = serverName;
-    // App component will see we connected to RPTL on unregistered mode and will register us as expected
+      this.mainAppProtocol.endSession();
+    } else { // No current session, begins a new session immediately
+      this.connectWith(serverUrl, serverName);
+    }
   }
 
   /**
@@ -100,5 +114,6 @@ export class ServersListComponent implements OnInit, OnDestroy {
    */
   ngOnDestroy(): void {
     this.serversStatusSubscription?.unsubscribe();
+    this.sessionEndSubscription?.unsubscribe();
   }
 }
