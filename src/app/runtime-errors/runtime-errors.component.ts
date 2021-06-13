@@ -59,6 +59,16 @@ export class RuntimeErrorsComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * @param uid Identifying the `RuntimeError` to check state for
+   *
+   * @returns `true` if that `RuntimeError` is going to be automatically hidden or not. If it is the case, then it ensures that
+   * `RuntimeError` is currently displayed>.
+   */
+  willBeHidden(uid: number): boolean {
+    return this.pendingDeletions[uid] !== undefined;
+  }
+
+  /**
    * Observes errors thrown by application and displays them until a certain duration has passed.
    */
   ngOnInit(): void {
