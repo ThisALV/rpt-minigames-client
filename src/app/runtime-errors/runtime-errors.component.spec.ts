@@ -1,5 +1,5 @@
-import { ComponentFixture, fakeAsync, flushMicrotasks, TestBed, tick } from '@angular/core/testing';
-import { RuntimeErrorsComponent } from './runtime-errors.component';
+import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { RuntimeErrorsComponent, UnknownRuntimeError } from './runtime-errors.component';
 import { RuntimeError, RuntimeErrorsService } from '../runtime-errors.service';
 import { expectArrayToBeEqual } from '../testing-helpers';
 
@@ -60,19 +60,14 @@ describe('RuntimeErrorsComponent', () => {
       }
     });
 
-    it('should hide error if it exists', fakeAsync(() => {
+    it('should hide error if it exists and cancel automatic hiding operation', fakeAsync(() => {
       component.hide(1); // Error with UID 1 is no longer displayed
       expectArrayToBeEqual(uidsOf(component.displayedErrors), 0, 2);
-
-      // This call cannot be put inside afterEach()), it must be inside the fakeAsync zone!
-      flushMicrotasks(); // Automatic hiding is disabled right now to a void side effects
+      expect(component.willBeHidden(1)).toBeFalse(); // Automatic hiding should have been cancelled as manual hiding was performed
     }));
 
-    it('should do nothing if error with given UID does not exist', fakeAsync(() => {
-      component.hide(42);
-      expectArrayToBeEqual(uidsOf(component.displayedErrors), 0, 1, 2);
-
-      flushMicrotasks(); // Automatic hiding is disabled right now to a void side effects
+    it('should throw if error with given UID does not exist', fakeAsync(() => {
+      expect(() => component.hide(42)).toThrowError(UnknownRuntimeError);
     }));
   });
 });
