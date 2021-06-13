@@ -3,18 +3,11 @@ import { SerProtocolService } from 'rpt-webapp-client';
 import { Observable, Subject } from 'rxjs';
 
 
-// Provides the next runtime error UID, will be incremented for each error to have an unique UID
-let errorsUidProvider = 0;
-
 /**
  * Read-only runtime error identified by its `uid` and described by its `message`.
  */
 export class RuntimeError {
-  readonly uid: number;
-
-  constructor(public readonly message: string) {
-    this.uid = errorsUidProvider++;
-  }
+  constructor(public readonly uid: number, public readonly message: string) {}
 }
 
 
@@ -27,6 +20,9 @@ export class RuntimeError {
 export class RuntimeErrorsService {
   private readonly errors: Subject<RuntimeError>;
 
+  /// Provides the next runtime error UID, will be incremented for each error created by service to have an unique UID
+  private errorsUidProvider: number;
+
   /**
    * Initializes service with no thrown errors and automatically throwing errors reported by given SER Protocol.
    *
@@ -34,6 +30,7 @@ export class RuntimeErrorsService {
    */
   constructor(private readonly serProtocol: SerProtocolService) {
     this.errors = new Subject<RuntimeError>();
+    this.errorsUidProvider = 0;
 
     serProtocol.getErrors().subscribe({
       next: (message: string) => this.throwError(message)
@@ -44,7 +41,7 @@ export class RuntimeErrorsService {
    * Next given message into underlying subject.
    */
   throwError(message: string): void {
-    this.errors.next(new RuntimeError(message));
+    this.errors.next(new RuntimeError(this.errorsUidProvider++, message));
   }
 
   /**
