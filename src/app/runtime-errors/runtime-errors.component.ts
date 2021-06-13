@@ -4,6 +4,16 @@ import { of, Subscription } from 'rxjs';
 import { delay } from 'rxjs/operators';
 
 
+/**
+ * Thrown by `hide()` method if no displayed error has given UID.
+ */
+export class UnknownRuntimeError extends Error {
+  constructor(triedUid: number) {
+    super(`No displayed error has UID ${triedUid}.`);
+  }
+}
+
+
 // Milliseconds to wait until an error message automatically starts to disappear
 const ERROR_DISPLAY_DURATION_MS = 5000;
 
@@ -19,18 +29,31 @@ export class RuntimeErrorsComponent implements OnInit, OnDestroy {
    */
   displayedErrors: RuntimeError[];
 
+  private readonly pendingDeletions: { [errUid: number]: Subscription }; // Subscriptions for delayed hide() calls for each displayed error
   private thrownErrorsSubscription?: Subscription; // Initialized when observing errors emitted by the underlying Angular service
 
   constructor(private readonly errorsSource: RuntimeErrorsService) {
+    this.pendingDeletions = {};
     this.displayedErrors = [];
   }
 
   /**
    * @param uid Identifying the `RuntimeError` object to remove from the error messages list.
    *
-   * @note Has no effect if no error is using given `uid`.
+   * @throws UnknownRuntimeError if no displayed error has given `uid`
    */
   hide(uid: number): void {
+    // Try to get subscription for delayed hiding operation associated with given error UID
+    const delayedHiding: Subscription | undefined = this.pendingDeletions[uid];
+    // If a displayed error has no entry on pendingDeletions, then it doesn't exist
+    if (delayedHiding === undefined) {
+      throw new UnknownRuntimeError(uid);
+    }
+
+    // Cancel automatic hiding if it was manually hidden
+    delayedHiding.unsubscribe();
+    delete this.pendingDeletions[uid];
+
     // Every error excepted the identified one will remain displayed
     this.displayedErrors = this.displayedErrors.filter((err: RuntimeError) => err.uid !== uid);
   }
@@ -43,7 +66,9 @@ export class RuntimeErrorsComponent implements OnInit, OnDestroy {
       next: (err: RuntimeError) => {
         this.displayedErrors.push(err); // Inserts message at the end of the error messages list
 
-        of<undefined>().pipe(delay(ERROR_DISPLAY_DURATION_MS)).subscribe({ // Waits for 5s before removing error from displayed list
+        // Waits for 5s before removing error from displayed list, creates an entry into pending hiding operations registry to cancel it
+        // later.
+        this.pendingDeletions[err.uid] = of<undefined>().pipe(delay(ERROR_DISPLAY_DURATION_MS)).subscribe({
           next: () => this.hide(err.uid) // Will have no effect if it was already removed manually by user
         });
       }
