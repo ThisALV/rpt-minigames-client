@@ -78,7 +78,7 @@ export class RuntimeErrorsComponent implements OnInit, OnDestroy {
 
         // Waits for 5s before removing error from displayed list, creates an entry into pending hiding operations registry to cancel it
         // later.
-        this.pendingDeletions[err.uid] = of<undefined>().pipe(delay(ERROR_DISPLAY_DURATION_MS)).subscribe({
+        this.pendingDeletions[err.uid] = of(undefined).pipe(delay(ERROR_DISPLAY_DURATION_MS)).subscribe({
           next: () => this.hide(err.uid) // Will have no effect if it was already removed manually by user
         });
       }
