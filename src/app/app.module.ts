@@ -5,13 +5,15 @@ import { AppComponent } from './app.component';
 import { ServersListComponent } from './servers-list/servers-list.component';
 import { LoginComponent } from './login/login.component';
 import { FormsModule } from '@angular/forms';
+import { RuntimeErrorsComponent } from './runtime-errors/runtime-errors.component';
 
 
 @NgModule({
   declarations: [
     AppComponent,
     ServersListComponent,
-    LoginComponent
+    LoginComponent,
+    RuntimeErrorsComponent
   ],
     imports: [
         BrowserModule,
