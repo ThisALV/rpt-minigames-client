@@ -39,6 +39,11 @@ export class ActorsNameService {
   constructor(private readonly rptlProtocol: RptlProtocolService) {
     const context: ActorsNameService = this;
 
+    // If service is injected for the 1st time, RPTL might already be in registered mode, in which case we must check for it right now
+    if (rptlProtocol.isRegistered()) {
+      this.makeAvailable();
+    }
+
     rptlProtocol.getState().subscribe({ // Update internal state to be consistent with RPTL protocol state and actors accessibility
       next(newState: RptlState): void {
         if (newState === RptlState.REGISTERED) { // Actors db is now accessible
