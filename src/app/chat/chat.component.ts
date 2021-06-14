@@ -1,8 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { RptlProtocolService, RptlState } from 'rpt-webapp-client';
+import { RptlProtocolService } from 'rpt-webapp-client';
 import { ChatService } from '../chat.service';
 import { Subscription } from 'rxjs';
-import { filter } from 'rxjs/operators';
 import { ActorsNameService } from '../actors-name.service';
 import { Message } from '../message';
 
@@ -28,7 +27,6 @@ export class ChatComponent implements OnInit, OnDestroy {
    */
   currentMessage: string;
 
-  private stateSubscription?: Subscription; // When initialized, subscription for listened RPTL state
   private messagesSubscription?: Subscription; // When registered, subscription for listened ChatServer messages
 
   constructor(
@@ -49,20 +47,14 @@ export class ChatComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Resets chat messages and waits for RPTL client to be registered, then listen for chat messages emitted by underlying SER Service chat.
+   * Resets chat messages and listen for chat messages emitted by underlying SER Service chat.
    */
   ngOnInit(): void {
     this.messages = []; // Resets received chat messages for the new lifecycle which corresponds to a new server aka a new chat room
     this.currentMessage = ''; // Resets user inputted text
 
-    this.stateSubscription = this.appStateProvider.getState().pipe(
-      filter((s: RptlState) => s === RptlState.REGISTERED) // Waits for RPTL protocol client to be registered inside the server
-    ).subscribe({
-      next: () => {
-        this.messagesSubscription = this.chat.getMessages().subscribe({ // Waits for a Chat message to be received
-          next: (msg: Message) => this.messages.push(msg)
-        });
-      }
+    this.messagesSubscription = this.chat.getMessages().subscribe({ // Waits for a Chat message to be received
+      next: (msg: Message) => this.messages = this.messages.concat(msg)
     });
   }
 
@@ -70,7 +62,6 @@ export class ChatComponent implements OnInit, OnDestroy {
    * Stops listening for RPTL state registered inside server and for new Chat messages.
    */
   ngOnDestroy(): void {
-    this.stateSubscription?.unsubscribe();
     this.messagesSubscription?.unsubscribe();
   }
 }
