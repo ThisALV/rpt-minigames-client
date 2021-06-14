@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ChatComponent } from './chat.component';
 import { expectArrayToBeEqual, MockedMessagingSubject } from '../testing-helpers';
 import { RptlProtocolService } from 'rpt-webapp-client';
-import { Message } from '../message';
 import { FormsModule } from '@angular/forms';
 
 
@@ -49,12 +48,12 @@ describe('ChatComponent', () => {
     connection.receive('SERVICE EVENT Chat MESSAGE_FROM 1 SSBU');
 
     // Checks for the 3 messages to have been received
-    expectArrayToBeEqual(
-      component.messages,
-      new Message(42, 'Hello world!'),
-      new Message(2, ''),
-      new Message(1, 'SSBU')
-    );
+    expect(component.messages[0].author).toEqual('ThisALV');
+    expect(component.messages[0].content).toEqual('Hello world!');
+    expect(component.messages[1].author).toEqual('Cobalt');
+    expect(component.messages[1].content).toEqual('');
+    expect(component.messages[2].author).toEqual('Redox');
+    expect(component.messages[2].content).toEqual('SSBU');
   });
 
   describe('sendCurrentMessage()', () => {
