@@ -2,5 +2,15 @@
   <app-login></app-login>
   <app-servers-list></app-servers-list>
 
+  <main>
+    <div *ngIf="insideRoom; else disconnected" class="room">
+      <app-chat></app-chat>
+    </div>
+
+    <ng-template #disconnected class="disconnected">
+      <p>Please select a game server to join a Lobby room.</p>
+    </ng-template>
+  </main>
+
   <app-runtime-errors></app-runtime-errors>
 </nav>
