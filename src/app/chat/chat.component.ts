@@ -53,6 +53,7 @@ export class ChatComponent implements OnInit, OnDestroy {
    */
   ngOnInit(): void {
     this.messages = []; // Resets received chat messages for the new lifecycle which corresponds to a new server aka a new chat room
+    this.currentMessage = ''; // Resets user inputted text
 
     this.stateSubscription = this.appStateProvider.getState().pipe(
       filter((s: RptlState) => s === RptlState.REGISTERED) // Waits for RPTL protocol client to be registered inside the server
