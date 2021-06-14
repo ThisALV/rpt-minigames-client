@@ -4,6 +4,7 @@ import { ChatService } from '../chat.service';
 import { Subscription } from 'rxjs';
 import { ActorsNameService } from '../actors-name.service';
 import { Message } from '../message';
+import { DisplayedMessage } from '../displayed-message';
 
 
 /**
@@ -20,7 +21,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   /**
    * Every messages received since current component lifecycle.
    */
-  messages: Message[];
+  messages: DisplayedMessage[];
 
   /**
    * Message which will be sent and reset to empty at `sendCurrentMessage()` call.
@@ -30,7 +31,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   private messagesSubscription?: Subscription; // When registered, subscription for listened ChatServer messages
 
   constructor(
-    public readonly namesProvider: ActorsNameService,
+    private readonly namesProvider: ActorsNameService,
     private readonly appStateProvider: RptlProtocolService,
     private readonly chat: ChatService
   ) {
@@ -54,7 +55,7 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.currentMessage = ''; // Resets user inputted text
 
     this.messagesSubscription = this.chat.getMessages().subscribe({ // Waits for a Chat message to be received
-      next: (msg: Message) => this.messages = this.messages.concat(msg)
+      next: (msg: Message) => this.messages.push(new DisplayedMessage(this.namesProvider, msg))
     });
   }
 

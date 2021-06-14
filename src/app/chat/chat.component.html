@@ -1,6 +1,6 @@
 <div class="chat">
   <div class="message" *ngFor="let msg of messages">
-    <span class="name">{{namesProvider.nameFor(msg.author)}} :</span> <span class="content">{{msg.content}}</span>
+    <span class="name">{{msg.author}} :</span> <span class="content">{{msg.content}}</span>
   </div>
 
   <input
