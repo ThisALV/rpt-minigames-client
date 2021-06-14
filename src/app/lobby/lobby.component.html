@@ -1,0 +1,24 @@
+<div class="lobby">
+  <p class="starting-countdown" *ngIf="startingCountdown !== undefined">
+    Game beginning into {{startingCountdown / 1000}}s...
+  </p>
+
+  <div class="state">
+    <span *ngIf="isPlaying; else open" class="lobby-busy">Lobby busy, waiting for game to terminate.</span>
+    <ng-template #open class="lobby-open">Lobby open, no game running.</ng-template>
+  </div>
+
+  <ul>
+    <li *ngFor="let player of players">
+      {{namesProvider.nameFor(player.actorUid)}}
+
+      <span *ngIf="player.isReady; else waitingfor" class="ready-player">(Ready.)</span>
+      <ng-template #waitingfor class="waiting-for-player">(Waiting...)</ng-template>
+    </li>
+  </ul>
+
+  <div class="ready-button" (click)="toggleReady()">
+    <button *ngIf="isOurselvesReady(); else notready" class="ready">Cancel</button>
+    <ng-template #notready class="not-ready">Ready</ng-template>
+  </div>
+</div>

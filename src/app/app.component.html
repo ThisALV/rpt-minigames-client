@@ -5,6 +5,7 @@
   <main>
     <div *ngIf="insideRoom; else disconnected" class="room">
       <app-chat></app-chat>
+      <app-lobby></app-lobby>
     </div>
 
     <ng-template #disconnected class="disconnected">

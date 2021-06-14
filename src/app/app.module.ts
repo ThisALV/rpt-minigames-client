@@ -7,6 +7,7 @@ import { LoginComponent } from './login/login.component';
 import { FormsModule } from '@angular/forms';
 import { RuntimeErrorsComponent } from './runtime-errors/runtime-errors.component';
 import { ChatComponent } from './chat/chat.component';
+import { LobbyComponent } from './lobby/lobby.component';
 
 
 @NgModule({
@@ -15,13 +16,14 @@ import { ChatComponent } from './chat/chat.component';
     ServersListComponent,
     LoginComponent,
     RuntimeErrorsComponent,
-    ChatComponent
+    ChatComponent,
+    LobbyComponent
   ],
-    imports: [
-        BrowserModule,
-        AppRoutingModule,
-        FormsModule
-    ],
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    FormsModule
+  ],
   providers: [
     { provide: Window, useValue: window }
   ],
