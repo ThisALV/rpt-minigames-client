@@ -40,7 +40,7 @@ export class ActorsNameService {
     const context: ActorsNameService = this;
 
     // If service is injected for the 1st time, RPTL might already be in registered mode, in which case we must check for it right now
-    if (rptlProtocol.isRegistered()) {
+    if (rptlProtocol.isSessionRunning() && rptlProtocol.isRegistered()) {
       this.makeAvailable();
     }
 
