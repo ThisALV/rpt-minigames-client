@@ -3,6 +3,7 @@ import { ChatComponent } from './chat.component';
 import { expectArrayToBeEqual, MockedMessagingSubject } from '../testing-helpers';
 import { RptlProtocolService } from 'rpt-webapp-client';
 import { Message } from '../message';
+import { FormsModule } from '@angular/forms';
 
 
 describe('ChatComponent', () => {
@@ -15,7 +16,8 @@ describe('ChatComponent', () => {
     connection = new MockedMessagingSubject();
 
     await TestBed.configureTestingModule({
-      declarations: [ ChatComponent ]
+      declarations: [ ChatComponent ],
+      imports: [ FormsModule ]
     }).compileComponents();
 
     const rptlProtocol = TestBed.inject(RptlProtocolService); // Provides access to RPTL service before createComponent() call
