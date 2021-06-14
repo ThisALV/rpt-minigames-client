@@ -1,0 +1,10 @@
+<div class="chat">
+  <div class="message" *ngFor="let msg of messages">
+    <span class="name">{{namesProvider.nameFor(msg.author)}} :</span> <span class="content">{{msg.content}}</span>
+  </div>
+
+  <input
+    type="text" placeholder="Type message then press Enter" [(ngModel)]="currentMessage"
+    (keydown.enter)="sendCurrentMessage()"
+  />
+</div>
