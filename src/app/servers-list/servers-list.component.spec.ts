@@ -1,56 +1,12 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { ServersListComponent } from './servers-list.component';
 import { GameServer } from '../game-server';
-import { Observable, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 import { Availability, RptlProtocolService, RptlState } from 'rpt-webapp-client';
 import { ServersListService } from '../servers-list.service';
 import { SHARED_CONNECTION_FACTORY } from '../game-server-connection';
-import { expectArrayToBeEqual, MockedMessagingSubject, unexpected } from '../testing-helpers';
+import { expectArrayToBeEqual, MockedMessagingSubject, MockedServersListProvider, DEFAULT_MOCKED_SERVERS, unexpected } from '../testing-helpers';
 import { GameServerResolutionService } from '../game-server-resolution.service';
-
-
-/// `MockedServersListProvided` initially provides this array with its `getListStatus()` mocked method
-const SERVERS: GameServer[] = [
-  new GameServer('Açores #1', 'a', new Availability(1, 2)),
-  new GameServer('Açores #2', 'a', new Availability(1, 2)),
-  new GameServer('Bermudes #1', 'b', new Availability(2, 2)),
-  new GameServer('Bermudes #2', 'b'),
-  new GameServer('Canaries #1', 'c', new Availability(0, 2)),
-  new GameServer('Canaries #2', 'c'),
-];
-
-
-/// Mocks ServersListService to always provides a predetermined GameServer array into getListStatus() when update() is called
-class MockedServersListProvider {
-  /// Must be reset for each instance as its content could be modified for testing purposes
-  readonly providedServers: GameServer[];
-  /// Mocks provider isUpdating() returned value
-  updating: boolean;
-
-  private readonly serversList: Subject<GameServer[]>;
-
-  /// Initializes `providesServers` with `SERVERS` default array
-  constructor() {
-    this.providedServers = SERVERS;
-    this.updating = false;
-    this.serversList = new Subject<GameServer[]>();
-  }
-
-  /// Provides `providedServers` when `update()` is called
-  getListStatus(): Observable<GameServer[]> {
-    return this.serversList;
-  }
-
-  /// Provides `providedServers` to `getListStatus()`
-  update(): void {
-    this.serversList.next(this.providedServers);
-  }
-
-  /// Returns `updating` field
-  isUpdating(): boolean {
-    return this.updating;
-  }
-}
 
 
 /// `MockedMessagingSubject` expect that `complete()` does nothing until and `actuallyComplete()` calls `super.complete()`.
@@ -135,12 +91,12 @@ describe('ServersListComponent', () => {
     // No game server is selected at the beginning of the component lifecycle
     expect(component.selectedServerName).toBeUndefined();
     // When initialization updating is done, every listed server should be listed by component
-    fixture.whenStable().then(() => expect(component.serversStatus).toEqual(SERVERS));
+    fixture.whenStable().then(() => expect(component.serversStatus).toEqual(DEFAULT_MOCKED_SERVERS));
   }));
 
   describe('checkout()', () => {
     it('should update game servers list with new provided data', waitForAsync(() => {
-      const newStatus: GameServer[] = SERVERS; // Modified list saved for further assertion
+      const newStatus: GameServer[] = DEFAULT_MOCKED_SERVERS; // Modified list saved for further assertion
       // Initializes retrieved data replacement
       newStatus[1] = new GameServer('Hello world!', 'c');
       newStatus[5] = new GameServer('Açores #3', 'a', new Availability(2, 2));

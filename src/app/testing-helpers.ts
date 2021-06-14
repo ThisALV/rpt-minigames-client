@@ -1,4 +1,6 @@
 import { MonoTypeOperatorFunction, Observable, Subject } from 'rxjs';
+import { GameServer } from './game-server';
+import { Availability } from 'rpt-webapp-client';
 
 
 /**
@@ -84,6 +86,66 @@ export class MockedMessagingSubject extends Subject<string> {
    */
   receive(message: string): void {
     super.next(message);
+  }
+}
+
+
+/**
+ * `MockedServersListProvided` initially provides this array with its `getListStatus()` mocked method.
+ */
+export const DEFAULT_MOCKED_SERVERS: GameServer[] = [
+  new GameServer('Açores #1', 'a', new Availability(1, 2)),
+  new GameServer('Açores #2', 'a', new Availability(1, 2)),
+  new GameServer('Bermudes #1', 'b', new Availability(2, 2)),
+  new GameServer('Bermudes #2', 'b'),
+  new GameServer('Canaries #1', 'c', new Availability(0, 2)),
+  new GameServer('Canaries #2', 'c'),
+];
+
+
+/**
+ * Mocks ServersListService to always provides a predetermined GameServer array into getListStatus() when update() is called.
+ */
+export class MockedServersListProvider {
+  /**
+   * Must be reset for each instance as its content could be modified for testing purposes.
+   */
+  readonly providedServers: GameServer[];
+  /**
+   * Mocks provider isUpdating() returned value.
+   */
+  updating: boolean;
+
+  private readonly serversList: Subject<GameServer[]>;
+
+  /**
+   * Initializes `providesServers` with `SERVERS` default array.
+   */
+  constructor() {
+    this.providedServers = DEFAULT_MOCKED_SERVERS;
+    this.updating = false;
+    this.serversList = new Subject<GameServer[]>();
+  }
+
+  /**
+   * @returns An Observable emitting `providedServers` when `update()` is called
+   */
+  getListStatus(): Observable<GameServer[]> {
+    return this.serversList;
+  }
+
+  /**
+   * Provides `providedServers` to `getListStatus()`.
+   */
+  update(): void {
+    this.serversList.next(this.providedServers);
+  }
+
+  /**
+   * @returns `updating` field
+   */
+  isUpdating(): boolean {
+    return this.updating;
   }
 }
 
