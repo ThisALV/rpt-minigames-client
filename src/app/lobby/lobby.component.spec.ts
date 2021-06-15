@@ -72,8 +72,9 @@ describe('LobbyComponent', () => {
     tick(1000);
     expect(component.startingCountdown).toEqual(1000);
     tick(1000);
-    expect(component.startingCountdown).toBeUndefined(); // Reaches 0, countdown terminated
-    connection.receive('SERVICE EVENT Lobby END_COUNTDOWN'); // When countdown is done, server notifies us
+    expect(component.startingCountdown).toEqual(1000); // Reaches 0, countdown terminated so it is no longer updates
+    connection.receive('SERVICE EVENT Lobby END_COUNTDOWN'); // When countdown is done, server notifies us and countdown is removed
+    expect(component.startingCountdown).toBeUndefined();
 
     connection.receive('SERVICE EVENT Lobby BEGIN_COUNTDOWN 3000'); // Receives a new countdown of 3s before game starts
     expect(component.startingCountdown).toEqual(3000);
