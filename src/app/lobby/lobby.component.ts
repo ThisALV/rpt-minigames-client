@@ -64,7 +64,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
         // 1 s has passed since the last recursive iteration
         const newRemainingDuration = remainingDurationMs - COUNTDOWN_STEP_DURATION_MS;
 
-        if (newRemainingDuration >= 0) { // if there is still time to wait, recursively does next iteration for the next 1 s
+        if (newRemainingDuration > 0) { // if there is still time to wait, recursively does next iteration for the next 1 s
           this.startCountdown(newRemainingDuration);
         } // Else, stopCountdown() will be called by isStarting() observer
       }
