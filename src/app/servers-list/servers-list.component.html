@@ -13,8 +13,8 @@
         Status: <span class="status">{{server.status.currentActors}}/{{server.status.actorsLimit}}</span>
       </div>
 
-      <ng-template #unavailable class="unavailable">
-        Could not get server status.
+      <ng-template #unavailable>
+        <div class="unavailable">Could not get server status.</div>
       </ng-template>
     </div>
 

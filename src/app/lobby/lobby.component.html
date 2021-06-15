@@ -5,7 +5,7 @@
 
   <div class="state">
     <span *ngIf="isPlaying; else open" class="lobby-busy">Lobby busy, waiting for game to terminate.</span>
-    <ng-template #open class="lobby-open">Lobby open, no game running.</ng-template>
+    <ng-template #open><span class="lobby-open">Lobby open, no game running.</span></ng-template>
   </div>
 
   <ul>
@@ -13,12 +13,12 @@
       {{namesProvider.nameFor(player.actorUid)}}
 
       <span *ngIf="player.isReady; else waitingfor" class="ready-player">(Ready.)</span>
-      <ng-template #waitingfor class="waiting-for-player">(Waiting...)</ng-template>
+      <ng-template #waitingfor><span class="waiting-for-player">(Waiting...)</span></ng-template>
     </li>
   </ul>
 
   <div class="ready-button" (click)="toggleReady()">
     <button *ngIf="isOurselvesReady(); else notready" class="ready">Cancel</button>
-    <ng-template #notready class="not-ready">Ready</ng-template>
+    <ng-template #notready><button class="not-ready">Ready</button></ng-template>
   </div>
 </div>
