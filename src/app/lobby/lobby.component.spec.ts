@@ -1,6 +1,6 @@
 import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { LobbyComponent } from './lobby.component';
-import { expectArrayToBeEqual, MockedMessagingSubject } from '../testing-helpers';
+import { expectArrayToContainAllOff, MockedMessagingSubject } from '../testing-helpers';
 import { RptlProtocolService } from 'rpt-webapp-client';
 import { FormsModule } from '@angular/forms';
 import { Player } from '../player';
@@ -36,23 +36,29 @@ describe('LobbyComponent', () => {
 
   it('should listen for players state updates', () => {
     // At beginning, we're the only player and we're not ready yet
-    expectArrayToBeEqual(component.players, new Player(42, false));
+    expect(component.players).toHaveSize(1);
+    expectArrayToContainAllOff(component.players, new Player(42, false));
 
     connection.receive('LOGGED_IN 22 Cobalt'); // A new player joined the Lobby
     // Cobalt just joined, he's inside Lobby but not ready neither
-    expectArrayToBeEqual(component.players, new Player(42, false), new Player(22, false));
+    expect(component.players).toHaveSize(2);
+    expectArrayToContainAllOff(component.players, new Player(42, false), new Player(22, false));
 
     connection.receive('SERVICE EVENT Lobby READY_PLAYER 42'); // ThisALV is now ready
-    expectArrayToBeEqual(component.players, new Player(42, true), new Player(22, false));
+    expect(component.players).toHaveSize(2);
+    expectArrayToContainAllOff(component.players, new Player(42, true), new Player(22, false));
 
-    connection.receive('SERVICE EVENT Lobby READY_PLAYER 42'); // Redox is now ready
-    expectArrayToBeEqual(component.players, new Player(42, true), new Player(22, true));
+    connection.receive('SERVICE EVENT Lobby READY_PLAYER 22'); // Redox is now ready
+    expect(component.players).toHaveSize(2);
+    expectArrayToContainAllOff(component.players, new Player(42, true), new Player(22, true));
 
     connection.receive('SERVICE EVENT Lobby WAITING_FOR_PLAYER 42'); // ThisALV is no longer ready
-    expectArrayToBeEqual(component.players, new Player(42, true), new Player(22, false));
+    expect(component.players).toHaveSize(2);
+    expectArrayToContainAllOff(component.players, new Player(42, false), new Player(22, true));
 
     connection.receive('LOGGED_OUT 22'); // Redox just left Lobby room
-    expectArrayToBeEqual(component.players, new Player(42, false)); // We're the only player remaining
+    expect(component.players).toHaveSize(1);
+    expectArrayToContainAllOff(component.players, new Player(42, false)); // We're the only player remaining
   });
 
   it('should listen for countdown updates', fakeAsync(() => {
