@@ -5,6 +5,7 @@ import { of, Subscription } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { RptlProtocolService } from 'rpt-webapp-client';
 import { ActorsNameService } from '../actors-name.service';
+import { ActorsListService } from '../actors-list.service';
 
 
 // Duration in milliseconds between each countdown display updating
@@ -46,6 +47,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   constructor(
     private readonly lobby: LobbyService,
     private readonly selfIdentityProvider: RptlProtocolService,
+    private readonly actorsListProvider: ActorsListService,
     public readonly namesProvider: ActorsNameService
   ) {
     this.players = [];
@@ -120,6 +122,11 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.isPlayingSubscription = this.lobby.isPlaying().subscribe({
       next: (newState: boolean) => this.isPlaying = newState
     });
+
+
+    // We're sure about startingCountdown and isPlaying value at new lifecycle, but we need to know about players currently connected
+    // which are unknown. To update players list, a new value for actors list must be emitted.
+    this.actorsListProvider.updateList();
   }
 
   /**
