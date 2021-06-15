@@ -24,20 +24,27 @@ export class ActorsListService {
   constructor(private readonly rptlProtocol: RptlProtocolService) {
     this.actors = new Subject<number[]>();
 
-    const context: ActorsListService = this;
     // As soon as a new actors list subject is provided by RPTL protocol <=> as soon as client is registered as an actor to see other actors
     rptlProtocol.getState().pipe(filter((newState: RptlState) => newState === RptlState.REGISTERED)).subscribe({
-      next(): void {
-        // Listen for next actors update, will automatically stop when unregistered, or disconnection
-        rptlProtocol.getActors().subscribe({
-          // Converts actors list into an UIDs list, and pushes new value into subject
-          next: (updatedList: Actor[]) => context.actors.next(updatedList.map((a: Actor) => a.uid))
-        });
-
-        // Right after registration, actors list hasn't been passed into subject, must be updated manually
-        rptlProtocol.updateActorsSubscribable();
-      }
+      next: () => this.listenActorsList()
     });
+
+    // Actors list subject might already be provided if 1st injection occurs when registered
+    if (rptlProtocol.isSessionRunning() && rptlProtocol.isRegistered()) {
+      this.listenActorsList();
+    }
+  }
+
+  /// Listens for actors list modifications inside RPTL protocol service and publishes them into this instance subbject
+  private listenActorsList(): void {
+    // Listen for next actors update, will automatically stop when unregistered, or disconnection
+    this.rptlProtocol.getActors().subscribe({
+      // Converts actors list into an UIDs list, and pushes new value into subject
+      next: (updatedList: Actor[]) => this.actors.next(updatedList.map((a: Actor) => a.uid))
+    });
+
+    // Right after registration, actors list hasn't been passed into subject, must be updated manually
+    this.rptlProtocol.updateActorsSubscribable();
   }
 
   /**
