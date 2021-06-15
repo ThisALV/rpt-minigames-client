@@ -89,10 +89,10 @@ describe('LobbyComponent', () => {
   it('should listen for lobby state updates', () => {
     expect(component.isPlaying).toBeFalse(); // Lobby open at initialization
 
-    connection.receive('PLAYING'); // Server notifies a game has started from this Lobby
+    connection.receive('SERVICE EVENT Lobby PLAYING'); // Server notifies a game has started from this Lobby
     expect(component.isPlaying).toBeTrue();
 
-    connection.receive('WAITING'); // Servers notifies that game has terminate
+    connection.receive('SERVICE EVENT Lobby WAITING'); // Servers notifies that game has terminate
     expect(component.isPlaying).toBeFalse();
   });
 });
