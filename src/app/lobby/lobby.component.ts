@@ -43,6 +43,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   private playersSubscription?: Subscription;
   private isStartingSubscription?: Subscription;
   private isPlayingSubscription?: Subscription;
+  private latestCountdownStep?: Subscription;
 
   constructor(
     private readonly lobby: LobbyService,
@@ -58,8 +59,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
   private startCountdown(remainingDurationMs: number): void {
     this.startingCountdown = remainingDurationMs; // Displays remaining time before game actually starts
 
-    // Waits for 1 second
-    of(undefined).pipe(delay(COUNTDOWN_STEP_DURATION_MS)).subscribe({
+    // Waits for 1 second, saving this step subscription in case we would need to stop it because it is cancelled
+    this.latestCountdownStep = of(undefined).pipe(delay(COUNTDOWN_STEP_DURATION_MS)).subscribe({
       next: () => {
         // 1 s has passed since the last recursive iteration
         const newRemainingDuration = remainingDurationMs - COUNTDOWN_STEP_DURATION_MS;
@@ -74,6 +75,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
   /// Dismisses starting countdown
   private stopCountdown(): void {
     this.startingCountdown = undefined;
+    // Cancels next countdown update if any
+    this.latestCountdownStep?.unsubscribe();
   }
 
   /**
