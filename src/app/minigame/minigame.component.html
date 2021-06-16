@@ -8,14 +8,15 @@
         'canaries': runMinigame === minigameTypes.CANARIES
       }"
     >
-      <div class="line" *ngFor="let line of gameGrid">
+      <div class="line" *ngFor="let line of gameGrid; index as lineIndex">
         <div
-          class="column" *ngFor="let square of line"
+          class="column" *ngFor="let square of line; index as columnIndex"
           [ngClass]="{
             'free': square === squareStates.FREE,
             'white': square === squareStates.WHITE,
             'black': square === squareStates.BLACK
           }"
+          (click)="select({ lineNumber: lineIndex + 1, columnNumber: columnIndex + 1 })"
         ></div>
       </div>
     </div>
