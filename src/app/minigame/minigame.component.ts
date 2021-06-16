@@ -141,6 +141,13 @@ export class MinigameComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Tries to stop current turn to go for next player round, if possible.
+   */
+  pass(): void {
+    this.minigame.finishRound();
+  }
+
+  /**
    * Listens for updates on game state and game board.
    */
   ngOnInit(): void {

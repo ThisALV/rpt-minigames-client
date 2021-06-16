@@ -157,4 +157,11 @@ describe('MinigameComponent', () => {
       expectArrayToBeEqual(connection.sentMessagesQueue, 'SERVICE REQUEST 0 Minigame MOVE 1 2 2 1');
     });
   });
+
+  describe('pass()', () => {
+    it('should send END command to server', () => {
+      component.pass();
+      expectArrayToBeEqual(connection.sentMessagesQueue, 'SERVICE REQUEST 0 Minigame END');
+    });
+  });
 });
