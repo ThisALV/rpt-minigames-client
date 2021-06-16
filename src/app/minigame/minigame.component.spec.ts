@@ -76,6 +76,8 @@ describe('MinigameComponent', () => {
     });
 
     it('should set current player UID when emitted', () => {
+      connection.receive('SERVICE EVENT Minigame START 42 22'); // Starts with ThisALV as white player and Cobalt as black player
+
       connection.receive('SERVICE EVENT Minigame ROUND_FOR WHITE'); // It's Cobalt turn
       expect(component.currentPlayer).toEqual(22);
 
