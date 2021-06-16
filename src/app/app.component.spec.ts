@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { ServersListService } from './servers-list.service';
 import { SHARED_CONNECTION_FACTORY } from './game-server-connection';
 import { LobbyComponent } from './lobby/lobby.component';
+import { MinigameService } from './minigame.service';
 
 
 describe('AppComponent', () => {
@@ -31,7 +32,9 @@ describe('AppComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [ RouterTestingModule, FormsModule ],
-      declarations: [ AppComponent, ChatComponent, LobbyComponent, LoginComponent, RuntimeErrorsComponent, ServersListComponent ],
+      declarations: [
+        AppComponent, ChatComponent, LobbyComponent, LoginComponent, MinigameService, RuntimeErrorsComponent, ServersListComponent
+      ],
       providers: [
         {
           // Mocks a web application running on https://localhost/, because GameServerResolutionService requires it to formats URLs
