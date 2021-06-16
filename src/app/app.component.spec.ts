@@ -12,7 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { ServersListService } from './servers-list.service';
 import { SHARED_CONNECTION_FACTORY } from './game-server-connection';
 import { LobbyComponent } from './lobby/lobby.component';
-import { MinigameService } from './minigame.service';
+import { MinigameComponent } from './minigame/minigame.component';
 
 
 describe('AppComponent', () => {
@@ -33,7 +33,7 @@ describe('AppComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ RouterTestingModule, FormsModule ],
       declarations: [
-        AppComponent, ChatComponent, LobbyComponent, LoginComponent, MinigameService, RuntimeErrorsComponent, ServersListComponent
+        AppComponent, ChatComponent, LobbyComponent, LoginComponent, MinigameComponent, RuntimeErrorsComponent, ServersListComponent
       ],
       providers: [
         {
