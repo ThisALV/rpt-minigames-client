@@ -1,0 +1,48 @@
+<div class="minigame">
+  <div class="game-board" *ngIf="isRunning; else latestResult">
+    <div
+      class="game-grid"
+      [ngClass]="{
+        'acores': runMinigame === minigameTypes.ACORES,
+        'bermudes': runMinigame === minigameTypes.BERMUDES,
+        'canaries': runMinigame === minigameTypes.CANARIES
+      }"
+    >
+      <div class="line" *ngFor="let line of gameGrid">
+        <div
+          class="column" *ngFor="let square of line"
+          [ngClass]="{
+            'free': square === squareStates.FREE,
+            'white': square === squareStates.WHITE,
+            'black': square === squareStates.BLACK
+          }"
+        ></div>
+      </div>
+    </div>
+
+    <div class="players">
+      <div *ngFor="let playerActorUid in players">
+        <div
+          class="player-prefix"
+          [ngClass]="{'current': currentPlayer === playerActorUid, 'other': currentPlayer !== playerActorUid}"
+        ></div>
+
+        <span
+          class="name"
+          [ngClass]="{
+            'white': players![playerActorUid].color === squareStates.WHITE,
+            'black': players![playerActorUid].color === squareStates.BLACK
+           }"
+        >
+          {{namesProvider.nameFor(playerActorUid)}}
+        </span>: <span class="pawns-count">{{players![playerActorUid].pawns}}</span>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #latestResult>
+    <p class="result" *ngIf="latestWinner !== undefined; then winnerExists; else noWinnerYet"></p>
+    <ng-template #winnerExists>Latest winner: <span class="winner-name">{{latestWinner}}</span></ng-template>
+    <ng-template #noWinnerYet>There isn't any previous winner to show yet.</ng-template>
+  </ng-template>
+</div>
