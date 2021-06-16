@@ -158,7 +158,7 @@ export class MinigameComponent implements OnInit, OnDestroy {
 
     this.safelySubscribe(this.minigame.getWinner(), { // Listens for latest game result to display when game session is terminated
       // Retrieves name immediately as actor might disconnect later
-      next: (winnerActorUid: number) => this.latestWinner = this.namesProvider.nameFor(winnerActorUid)
+      next: (winnerActorUid: number) => this.latestWinner = this.namesProvider.nameFor(Number(winnerActorUid))
     });
 
     this.safelySubscribe(this.minigame.getCurrentPlayer(), { // Listens for current round actor which should play
