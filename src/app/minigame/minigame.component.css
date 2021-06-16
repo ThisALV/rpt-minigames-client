@@ -13,4 +13,17 @@
 
 .column {
   flex: 1;
+  border: 1px solid black;
+}
+
+.free {
+  background-color: gray;
+}
+
+.white {
+  background-color: white;
+}
+
+.black {
+  background-color: black;
 }
