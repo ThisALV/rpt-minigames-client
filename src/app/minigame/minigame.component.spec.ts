@@ -102,6 +102,7 @@ describe('MinigameComponent', () => {
       expectedGrid[2][2] = SquareState.WHITE;
       expect(component.gameGrid).toEqual(expectedGrid);
 
+      connection.receive('SERVICE EVENT Minigame ROUND_FOR WHITE'); // Must known that move is performed by the white player
       connection.receive('SERVICE EVENT Minigame MOVED 2 3 3 3'); // White player perform a move from (2, 3) to (3, 3)
       expectedGrid[1][2] = SquareState.FREE;
       expectedGrid[2][2] = SquareState.WHITE;
