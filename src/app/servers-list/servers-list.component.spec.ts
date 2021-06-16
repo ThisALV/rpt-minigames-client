@@ -5,8 +5,16 @@ import { Subject } from 'rxjs';
 import { Availability, RptlProtocolService, RptlState } from 'rpt-webapp-client';
 import { ServersListService } from '../servers-list.service';
 import { SHARED_CONNECTION_FACTORY } from '../game-server-connection';
-import { expectArrayToBeEqual, MockedMessagingSubject, MockedServersListProvider, DEFAULT_MOCKED_SERVERS, unexpected } from '../testing-helpers';
+import {
+  DEFAULT_MOCKED_SERVERS,
+  expectArrayToBeEqual,
+  MockedMessagingSubject,
+  MockedServersListProvider,
+  unexpected
+} from '../testing-helpers';
 import { GameServerResolutionService } from '../game-server-resolution.service';
+import { MinigameService } from '../minigame.service';
+import { MinigameType } from '../minigame-enums';
 
 
 /// `MockedMessagingSubject` expect that `complete()` does nothing until and `actuallyComplete()` calls `super.complete()`.
@@ -31,6 +39,7 @@ class DeferredCompletionConnection extends MockedMessagingSubject {
 describe('ServersListComponent', () => {
   let mockedServersListService: MockedServersListProvider; // Used to control data provided to the component
   let rptlProtocol: RptlProtocolService; // Used to check for connection to have been done and for session to have begun successfully
+  let minigame: MinigameService; // Used to check for current RpT Minigame if it matches with selected game server
   let component: ServersListComponent;
   let fixture: ComponentFixture<ServersListComponent>;
 
@@ -78,6 +87,8 @@ describe('ServersListComponent', () => {
 
     // Gives access to current RPTL mode (unregistered/registered)
     rptlProtocol = TestBed.inject(RptlProtocolService);
+    // Gives access to current RpT Minigame type
+    minigame = TestBed.inject(MinigameService);
 
     // Begins event/binding detection cycle and provides the component from unit test configuration
     fixture = TestBed.createComponent(ServersListComponent);
@@ -150,5 +161,18 @@ describe('ServersListComponent', () => {
         expect(component.selectedServerName).toEqual('Açores #1');
       });
     }));
+
+    it('should configure MinigameService ', () => {
+      let latestMinigameType: MinigameType | undefined;
+      minigame.getMinigameType().subscribe({ // Listens for emitted minigame types
+        next: (type: MinigameType) => latestMinigameType = type,
+        error: unexpected,
+        complete: unexpected
+      });
+
+      // Connects to the 6th game server which is playing on Canaries minigame
+      component.select('Canaries #2');
+      expect(latestMinigameType).toEqual(MinigameType.CANARIES); // Should have emitted selected game server minigame type
+    });
   });
 });
