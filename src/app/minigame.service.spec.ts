@@ -78,18 +78,11 @@ describe('MinigameService', () => {
   });
 
   describe('playOn()', () => {
-    it('should pushes a new value into getMinigameType() and changes getInitialGrid/PawnCounts() return', () => {
-      let lastMinigameType: MinigameType | undefined; // Listen for current RpT Minigame, we'll check it is updated as expected
-      service.getMinigameType().subscribe({
-        next: (newType: MinigameType) => lastMinigameType = newType,
-        complete: unexpected,
-        error: unexpected
-      });
-
+    it('should set a new value returned getMinigameType() and changes getInitialGrid/PawnCounts() return', () => {
       service.playOn(MinigameType.BERMUDES); // Selects Bermudes minigame
       expect(service.getInitialGrid()).toEqual(initialGrids[MinigameType.BERMUDES]); // Checks for retrieved grid to be correct
       expect(service.getInitialPawnCounts()).toEqual(initialPawnCounts[MinigameType.BERMUDES]); // Checks for retrieved pawn counts
-      expect(lastMinigameType).toEqual(MinigameType.BERMUDES); // Checks for emitted RpT Minigame type to also be correct
+      expect(service.getMinigameType()).toEqual(MinigameType.BERMUDES); // Checks for emitted RpT Minigame type to also be correct
 
       /*
        * Repeats same operation for the 2 other minigames.
@@ -98,28 +91,12 @@ describe('MinigameService', () => {
       service.playOn(MinigameType.ACORES);
       expect(service.getInitialGrid()).toEqual(initialGrids[MinigameType.ACORES]);
       expect(service.getInitialPawnCounts()).toEqual(initialPawnCounts[MinigameType.ACORES]);
-      expect(lastMinigameType).toEqual(MinigameType.ACORES);
+      expect(service.getMinigameType()).toEqual(MinigameType.ACORES);
 
       service.playOn(MinigameType.CANARIES);
       expect(service.getInitialGrid()).toEqual(initialGrids[MinigameType.CANARIES]);
       expect(service.getInitialPawnCounts()).toEqual(initialPawnCounts[MinigameType.CANARIES]);
-      expect(lastMinigameType).toEqual(MinigameType.CANARIES);
-    });
-  });
-
-  describe('updateMinigameType()', () => {
-    it('should pushes a new value into getMinigameType()', () => {
-      service.playOn(MinigameType.CANARIES); // First selects Canaries minigame
-
-      let lastMinigameType: MinigameType | undefined; // Listen for current RpT Minigame after it has been updated
-      service.getMinigameType().subscribe({
-        next: (newType: MinigameType) => lastMinigameType = newType,
-        complete: unexpected,
-        error: unexpected
-      });
-
-      service.updateMinigameType(); // Should pushes RpT Minigame type into subject again
-      expect(lastMinigameType).toEqual(MinigameType.CANARIES);
+      expect(service.getMinigameType()).toEqual(MinigameType.CANARIES);
     });
   });
 

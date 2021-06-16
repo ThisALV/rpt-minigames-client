@@ -84,7 +84,6 @@ class SquareStateParser {
 })
 export class MinigameService extends SerService {
   private readonly playerToUid: ArgumentConverter; // Used to returns an actor UID depending on instance assigned players
-  private readonly minigameType: Subject<MinigameType>; // Value passed when user configures service to use another minigame
   private readonly winner: Subject<number>; // Actor UID passed each time a player wins
   private readonly started: Subject<boolean>; // true passed when game is running, false passed when a player wins
   private readonly movedPawns: Subject<PawnMovement>;
@@ -92,7 +91,7 @@ export class MinigameService extends SerService {
   private readonly pawnCounts: Subject<PlayersPawnCounts>;
   private readonly currentPlayer: Subject<number>; // Actor UID passed each time we go to the next player
 
-  private currentMinigame: MinigameType;
+  private currentMinigame: MinigameType; // We'll check for minigame type once isRunning() emits true, so we do not use subject for this val
   private players?: PlayersConfiguration; // Undefined if no minigame is running
 
   constructor(stateProvider: RptlProtocolService, serProtocol: SerProtocolService) {
@@ -113,7 +112,6 @@ export class MinigameService extends SerService {
       }
     };
 
-    this.minigameType = new Subject<MinigameType>();
     this.winner = new Subject<number>();
     this.started = new Subject<boolean>();
     this.movedPawns = new Subject<PawnMovement>();
@@ -247,14 +245,6 @@ export class MinigameService extends SerService {
    */
   playOn(minigame: MinigameType): void {
     this.currentMinigame = minigame;
-    this.updateMinigameType();
-  }
-
-  /**
-   * Emits again `MinigameType` value inside `getMinigameType()` subject.
-   */
-  updateMinigameType(): void {
-    this.minigameType.next(this.currentMinigame);
   }
 
   /**
@@ -285,10 +275,10 @@ export class MinigameService extends SerService {
   }
 
   /**
-   * @returns Observable for selected RpT Minigame type
+   * @returns Selected RpT Minigame type
    */
-  getMinigameType(): Observable<MinigameType> {
-    return this.minigameType;
+  getMinigameType(): MinigameType {
+    return this.currentMinigame;
   }
 
   /**
