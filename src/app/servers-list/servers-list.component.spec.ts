@@ -165,7 +165,7 @@ describe('ServersListComponent', () => {
     it('should configure MinigameService ', () => {
       // Connects to the 6th game server which is playing on Canaries minigame
       component.select('Canaries #2');
-      expect(minigame.getMinigameType).toEqual(MinigameType.CANARIES); // Should have emitted selected game server minigame type
+      expect(minigame.getMinigameType()).toEqual(MinigameType.CANARIES); // Should have emitted selected game server minigame type
     });
   });
 });
