@@ -163,16 +163,9 @@ describe('ServersListComponent', () => {
     }));
 
     it('should configure MinigameService ', () => {
-      let latestMinigameType: MinigameType | undefined;
-      minigame.getMinigameType().subscribe({ // Listens for emitted minigame types
-        next: (type: MinigameType) => latestMinigameType = type,
-        error: unexpected,
-        complete: unexpected
-      });
-
       // Connects to the 6th game server which is playing on Canaries minigame
       component.select('Canaries #2');
-      expect(latestMinigameType).toEqual(MinigameType.CANARIES); // Should have emitted selected game server minigame type
+      expect(minigame.getMinigameType).toEqual(MinigameType.CANARIES); // Should have emitted selected game server minigame type
     });
   });
 });
