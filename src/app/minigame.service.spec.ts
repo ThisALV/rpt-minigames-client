@@ -1,11 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import {
-  BadMinigameState,
-  MinigameService,
-  PawnMovement,
-  PlayersPawnCounts,
-  SquareUpdate
-} from './minigame.service';
+import { BadMinigameState, MinigameService, PawnMovement, PlayersPawnCounts, SquareUpdate } from './minigame.service';
 import { expectArrayToBeEqual, MockedMessagingSubject, unexpected } from './testing-helpers';
 import { RptlProtocolService } from 'rpt-webapp-client';
 import { initialGrids, initialPawnCounts } from './initial-grids';
@@ -109,6 +103,22 @@ describe('MinigameService', () => {
       service.playOn(MinigameType.CANARIES);
       expect(service.getInitialGrid()).toEqual(initialGrids[MinigameType.CANARIES]);
       expect(service.getInitialPawnCounts()).toEqual(initialPawnCounts[MinigameType.CANARIES]);
+      expect(lastMinigameType).toEqual(MinigameType.CANARIES);
+    });
+  });
+
+  describe('updateMinigameType()', () => {
+    it('should pushes a new value into getMinigameType()', () => {
+      service.playOn(MinigameType.CANARIES); // First selects Canaries minigame
+
+      let lastMinigameType: MinigameType | undefined; // Listen for current RpT Minigame after it has been updated
+      service.getMinigameType().subscribe({
+        next: (newType: MinigameType) => lastMinigameType = newType,
+        complete: unexpected,
+        error: unexpected
+      });
+
+      service.updateMinigameType(); // Should pushes RpT Minigame type into subject again
       expect(lastMinigameType).toEqual(MinigameType.CANARIES);
     });
   });

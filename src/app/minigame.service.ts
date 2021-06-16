@@ -247,7 +247,14 @@ export class MinigameService extends SerService {
    */
   playOn(minigame: MinigameType): void {
     this.currentMinigame = minigame;
-    this.minigameType.next(minigame);
+    this.updateMinigameType();
+  }
+
+  /**
+   * Emits again `MinigameType` value inside `getMinigameType()` subject.
+   */
+  updateMinigameType(): void {
+    this.minigameType.next(this.currentMinigame);
   }
 
   /**
