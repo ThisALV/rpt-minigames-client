@@ -68,20 +68,20 @@ describe('MinigameComponent', () => {
 
       expect(component.latestWinner).toBeUndefined(); // For now, nobody won a game session
 
-      connection.receive('SERVICE EVENT Minigame VICTORY_FOR WHITE'); // Cobalt won
+      connection.receive('SERVICE EVENT Minigame VICTORY_FOR BLACK'); // Cobalt won
       expect(component.latestWinner).toEqual('Cobalt');
 
-      connection.receive('SERVICE EVENT Minigame VICTORY_FOR BLACK'); // ThisALV won
+      connection.receive('SERVICE EVENT Minigame VICTORY_FOR WHITE'); // ThisALV won
       expect(component.latestWinner).toEqual('ThisALV');
     });
 
     it('should set current player UID when emitted', () => {
       connection.receive('SERVICE EVENT Minigame START 42 22'); // Starts with ThisALV as white player and Cobalt as black player
 
-      connection.receive('SERVICE EVENT Minigame ROUND_FOR WHITE'); // It's Cobalt turn
+      connection.receive('SERVICE EVENT Minigame ROUND_FOR BLACK'); // It's Cobalt turn
       expect(component.currentPlayer).toEqual(22);
 
-      connection.receive('SERVICE EVENT Minigame ROUND_FOR BLACK'); // It's ThisALV turn
+      connection.receive('SERVICE EVENT Minigame ROUND_FOR WHITE'); // It's ThisALV turn
       expect(component.currentPlayer).toEqual(42);
     });
 
