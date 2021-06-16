@@ -83,6 +83,20 @@ export class MinigameComponent implements OnInit, OnDestroy {
     this.subscriptions.push(subscribable.subscribe(observer));
   }
 
+  /// Handles isRunning true value to setup game configuration using RpT Minigame type
+  private setupGameState(): void {
+    this.runMinigame = this.minigame.getMinigameType(); // Configures RpT Minigame type to have appropriate class for HTML element
+    this.gameGrid = this.minigame.getInitialGrid(); // Initializes grid for that minigame type
+
+    const playersConfig = this.minigame.getPlayers(); // Retrieves known UIDs for white and black players owner
+    const pawnCounts = this.minigame.getInitialPawnCounts(); // Retrieves beginning number of pawns for each player
+    // Initializes players registry with known UIDs for white and black players
+    this.players = {
+      [playersConfig.white]: { pawns: pawnCounts.white, color: SquareState.WHITE },
+      [playersConfig.black]: { pawns: pawnCounts.black, color: SquareState.BLACK }
+    };
+  }
+
   /// Handles isRunning false value to reset game configuration to undefined
   private resetGameState(): void {
     // Resets board game state, keeps latestWinner as its a statistics field
@@ -136,8 +150,8 @@ export class MinigameComponent implements OnInit, OnDestroy {
 
         if (!running) { // If game stops, we must reset game state.
           this.resetGameState();
-        } else { // Else, observers will updates game board config values when emitted, so no need to configure them here
-          this.runMinigame = this.minigame.getMinigameType(); // Only minigame type is not passed using subject and have to be set here
+        } else { // Else, observers will updates fields when required which are initialized depending on configured RpT Minigame type
+          this.setupGameState(); // Only minigame type, grid and players are not passed using subject and have to be set here
         }
       }
     });
