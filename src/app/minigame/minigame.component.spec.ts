@@ -119,7 +119,7 @@ describe('MinigameComponent', () => {
       fixture.destroy(); // Calls ngOnDestroy()
       // Triggers some Minigame events to emit values and check for observers to have unsubscribed subject successfully
       connection.receive('SERVICE EVENT Minigame ROUND_FOR BLACK');
-      connection.receive('SERVICE EVENT Minigame SQUARE_SQUATE 1 1 FREE');
+      connection.receive('SERVICE EVENT Minigame SQUARE_STATE 1 1 FREE');
 
       // If unsubscribed, every field should remain undefined even if values where emitted
       expect(component.runMinigame).toBeUndefined();
