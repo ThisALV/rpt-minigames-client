@@ -8,7 +8,7 @@ import {
 } from './minigame.service';
 import { expectArrayToBeEqual, MockedMessagingSubject, unexpected } from './testing-helpers';
 import { RptlProtocolService } from 'rpt-webapp-client';
-import { initialGrids } from './initial-grids';
+import { initialGrids, initialPawnCounts } from './initial-grids';
 import { MinigameType, SquareState } from './minigame-enums';
 
 
@@ -84,7 +84,7 @@ describe('MinigameService', () => {
   });
 
   describe('playOn()', () => {
-    it('should pushes a new value into getMinigameType() and changes getInitialGrid() return', () => {
+    it('should pushes a new value into getMinigameType() and changes getInitialGrid/PawnCounts() return', () => {
       let lastMinigameType: MinigameType | undefined; // Listen for current RpT Minigame, we'll check it is updated as expected
       service.getMinigameType().subscribe({
         next: (newType: MinigameType) => lastMinigameType = newType,
@@ -94,6 +94,7 @@ describe('MinigameService', () => {
 
       service.playOn(MinigameType.BERMUDES); // Selects Bermudes minigame
       expect(service.getInitialGrid()).toEqual(initialGrids[MinigameType.BERMUDES]); // Checks for retrieved grid to be correct
+      expect(service.getInitialPawnCounts()).toEqual(initialPawnCounts[MinigameType.BERMUDES]); // Checks for retrieved pawn counts
       expect(lastMinigameType).toEqual(MinigameType.BERMUDES); // Checks for emitted RpT Minigame type to also be correct
 
       /*
@@ -102,10 +103,12 @@ describe('MinigameService', () => {
 
       service.playOn(MinigameType.ACORES);
       expect(service.getInitialGrid()).toEqual(initialGrids[MinigameType.ACORES]);
+      expect(service.getInitialPawnCounts()).toEqual(initialPawnCounts[MinigameType.ACORES]);
       expect(lastMinigameType).toEqual(MinigameType.ACORES);
 
       service.playOn(MinigameType.CANARIES);
       expect(service.getInitialGrid()).toEqual(initialGrids[MinigameType.CANARIES]);
+      expect(service.getInitialPawnCounts()).toEqual(initialPawnCounts[MinigameType.CANARIES]);
       expect(lastMinigameType).toEqual(MinigameType.CANARIES);
     });
   });

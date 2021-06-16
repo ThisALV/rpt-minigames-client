@@ -38,3 +38,12 @@ export const initialGrids = {
     [ WHITE, WHITE, WHITE, WHITE ]
   ]
 };
+
+/**
+ * Contains initial pawn counts inside grid for each RpT Minigame available.
+ */
+export const initialPawnCounts = {
+  [MinigameType.ACORES]: { white: 12, black: 12 },
+  [MinigameType.BERMUDES]: { white: 27, black: 27 },
+  [MinigameType.CANARIES]: { white: 8, black: 8 }
+};

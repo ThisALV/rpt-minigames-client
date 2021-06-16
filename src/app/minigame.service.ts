@@ -10,7 +10,7 @@ import {
 } from 'rpt-webapp-client';
 import { Observable, Subject } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { initialGrids } from './initial-grids';
+import { initialGrids, initialPawnCounts } from './initial-grids';
 import { MinigameType, SquareState } from './minigame-enums';
 
 
@@ -251,10 +251,17 @@ export class MinigameService extends SerService {
   }
 
   /**
-   * @returns Retrieves initial minigame grid for current RpT Minigame.
+   * @returns Initial minigame grid for current RpT Minigame
    */
   getInitialGrid(): number[][] {
     return initialGrids[this.currentMinigame];
+  }
+
+  /**
+   * @returns Initial pawn counts for each player inside grid of current RpT Minigame
+   */
+  getInitialPawnCounts(): PlayersConfiguration {
+    return initialPawnCounts[this.currentMinigame];
   }
 
   /**
