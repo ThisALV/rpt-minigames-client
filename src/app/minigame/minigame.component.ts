@@ -162,7 +162,8 @@ export class MinigameComponent implements OnInit, OnDestroy {
   select(square: Coordinates): void {
     if (this.movedPawn === undefined) { // If no pawn is currently selected, select a pawn to move
       this.movedPawn = square;
-    } else if (square === this.movedPawn) { // If a pawn to move as already been select and if the same pawn which is selected now...
+    // If a pawn to move as already been select and if the same pawn which is selected now...
+    } else if (square.lineNumber === this.movedPawn.lineNumber && square.columnNumber === this.movedPawn.columnNumber) {
       this.movedPawn = undefined; // ...cancels selection
     } else { // If a pawn to move is selected and currently selected square is different, then try to perform the move and resets selection
       this.minigame.move({ from: this.movedPawn, to: square });

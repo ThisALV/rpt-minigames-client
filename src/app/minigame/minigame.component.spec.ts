@@ -160,6 +160,7 @@ describe('MinigameComponent', () => {
       component.select({ lineNumber: 1, columnNumber: 2 }); // Should set movedPawn once
       component.select({ lineNumber: 1, columnNumber: 2 }); // Should unset movedPawn
       expect(component.movedPawn).toBeUndefined();
+      expect(connection.sentMessagesQueue).toHaveSize(0);
     });
 
     it('should send MOVE and reset movedPawn if it is defined and coordinates are different', () => {
