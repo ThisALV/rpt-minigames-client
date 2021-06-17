@@ -79,6 +79,13 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.latestCountdownStep?.unsubscribe();
   }
 
+  /// Sets every players to waiting state aka not ready
+  private resetPlayersState(): void {
+    for (const p of this.players) {
+      p.isReady = false;
+    }
+  }
+
   /**
    * Calls `toggleReady()` on the underlying `LobbyService`.
    */
@@ -129,6 +136,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
         // If playing, the countdown that preceded game start must be dismissed
         if (this.isPlaying) {
           this.stopCountdown();
+        } else { // If game has terminated, every player still here is no longer ready for the next game to start
+          this.resetPlayersState();
         }
       }
     });

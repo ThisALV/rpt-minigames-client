@@ -96,12 +96,16 @@ describe('LobbyComponent', () => {
   it('should listen for lobby state updates', () => {
     expect(component.isPlaying).toBeFalse(); // Lobby open at initialization
 
-    component.startingCountdown = 0; // Sets a random value to countdown to check later if it has been unset
+    // Make the player ready
+    connection.receive('SERVICE EVENT Lobby READY_PLAYER 42');
+    // Sets a random value to countdown to check later if it has been unset
+    connection.receive('SERVICE EVENT Lobby BEGIN_COUNTDOWN 0');
     connection.receive('SERVICE EVENT Lobby PLAYING'); // Server notifies a game has started from this Lobby
     expect(component.isPlaying).toBeTrue();
     expect(component.startingCountdown).toBeUndefined(); // Game start should reset the starting countdown
 
     connection.receive('SERVICE EVENT Lobby WAITING'); // Servers notifies that game has terminate
     expect(component.isPlaying).toBeFalse();
+    expect(component.players[0].isReady).toBeFalse(); // Game stop should have put every player into waiting state
   });
 });
