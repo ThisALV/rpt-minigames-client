@@ -123,7 +123,14 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
     // Listens for Lobby to be open or busy depending on if a game is currently running or not
     this.isPlayingSubscription = this.lobby.isPlaying().subscribe({
-      next: (newState: boolean) => this.isPlaying = newState
+      next: (newState: boolean) => {
+        this.isPlaying = newState;
+
+        // If playing, the countdown that preceded game start must be dismissed
+        if (this.isPlaying) {
+          this.stopCountdown();
+        }
+      }
     });
 
 
