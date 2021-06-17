@@ -27,3 +27,11 @@
 .black {
   background-color: black;
 }
+
+.current {
+  background-color: orange;
+  /* Temporary rules to display current player, will be replace for production */
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+}

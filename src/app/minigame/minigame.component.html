@@ -25,10 +25,10 @@
 
     <div class="players">
       <div *ngFor="let playerActorUid of getPlayerActors()">
-        <div
+        <span
           class="player-prefix"
           [ngClass]="{'current': currentPlayer === playerActorUid, 'other': currentPlayer !== playerActorUid}"
-        ></div>
+        >  </span>
 
         <span
           class="name"
