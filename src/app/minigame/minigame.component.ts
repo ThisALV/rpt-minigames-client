@@ -177,7 +177,7 @@ export class MinigameComponent implements OnInit, OnDestroy {
     });
 
     this.safelySubscribe(this.minigame.getCurrentPlayer(), { // Listens for current round actor which should play
-      next: (currentPlayerOwnerUid: number) => this.currentPlayer = currentPlayerOwnerUid
+      next: (currentPlayerOwnerUid: number) => this.currentPlayer = Number(currentPlayerOwnerUid)
     });
 
     /*
