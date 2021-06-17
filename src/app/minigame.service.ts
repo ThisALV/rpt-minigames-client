@@ -10,7 +10,7 @@ import {
 } from 'rpt-webapp-client';
 import { Observable, Subject } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { initialGrids } from './initial-grids';
+import { initialGrids, initialPawnCounts } from './initial-grids';
 import { MinigameType, SquareState } from './minigame-enums';
 
 
@@ -84,7 +84,6 @@ class SquareStateParser {
 })
 export class MinigameService extends SerService {
   private readonly playerToUid: ArgumentConverter; // Used to returns an actor UID depending on instance assigned players
-  private readonly minigameType: Subject<MinigameType>; // Value passed when user configures service to use another minigame
   private readonly winner: Subject<number>; // Actor UID passed each time a player wins
   private readonly started: Subject<boolean>; // true passed when game is running, false passed when a player wins
   private readonly movedPawns: Subject<PawnMovement>;
@@ -92,7 +91,7 @@ export class MinigameService extends SerService {
   private readonly pawnCounts: Subject<PlayersPawnCounts>;
   private readonly currentPlayer: Subject<number>; // Actor UID passed each time we go to the next player
 
-  private currentMinigame: MinigameType;
+  private currentMinigame: MinigameType; // We'll check for minigame type once isRunning() emits true, so we do not use subject for this val
   private players?: PlayersConfiguration; // Undefined if no minigame is running
 
   constructor(stateProvider: RptlProtocolService, serProtocol: SerProtocolService) {
@@ -113,7 +112,6 @@ export class MinigameService extends SerService {
       }
     };
 
-    this.minigameType = new Subject<MinigameType>();
     this.winner = new Subject<number>();
     this.started = new Subject<boolean>();
     this.movedPawns = new Subject<PawnMovement>();
@@ -247,14 +245,27 @@ export class MinigameService extends SerService {
    */
   playOn(minigame: MinigameType): void {
     this.currentMinigame = minigame;
-    this.minigameType.next(minigame);
   }
 
   /**
-   * @returns Retrieves initial minigame grid for current RpT Minigame.
+   * @returns Initial minigame grid for current RpT Minigame
    */
   getInitialGrid(): number[][] {
-    return initialGrids[this.currentMinigame];
+    const copied = initialGrids[this.currentMinigame];
+    const gridCopy: number[][] = [];
+
+    for (const line of copied) { // Performs a deep-copy line by line
+      gridCopy.push(line.slice()); // Slices performs a deep-copy of the line contained columns
+    }
+
+    return gridCopy; // Returns the deep-copy, avoiding initial grid template modifications
+  }
+
+  /**
+   * @returns Initial pawn counts for each player inside grid of current RpT Minigame
+   */
+  getInitialPawnCounts(): PlayersConfiguration {
+    return initialPawnCounts[this.currentMinigame];
   }
 
   /**
@@ -271,10 +282,10 @@ export class MinigameService extends SerService {
   }
 
   /**
-   * @returns Observable for selected RpT Minigame type
+   * @returns Selected RpT Minigame type
    */
-  getMinigameType(): Observable<MinigameType> {
-    return this.minigameType;
+  getMinigameType(): MinigameType {
+    return this.currentMinigame;
   }
 
   /**

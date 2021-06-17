@@ -8,6 +8,8 @@ import { servers } from '../servers.json';
 import { GameServerResolutionService } from '../game-server-resolution.service';
 import { RptlProtocolService, RptlState } from 'rpt-webapp-client';
 import { first } from 'rxjs/operators';
+import { MinigameService } from '../minigame.service';
+import { MinigameType } from '../minigame-enums';
 
 
 // Used by ServersList component to provides a real RPTL configured WebSocket connection handling error with given RuntimeErrors service
@@ -38,6 +40,7 @@ export class ServersListComponent implements OnInit, OnDestroy {
   selectedServerName?: string;
 
   private readonly serverPorts: { [serverName: string]: number }; // Registry of port for each known game server
+  private readonly serverMinigameTypes: { [serverName: string]: string }; // Registry of RpT Minigame type for each known game server
 
   private serversStatusSubscription?: Subscription; // When uninitialized, no longer wait for requested game servers status
   private sessionEndSubscription?: Subscription; // When uninitialized, doesn't wait for previously selected session to end
@@ -46,23 +49,46 @@ export class ServersListComponent implements OnInit, OnDestroy {
     private readonly serversStatusProvider: ServersListService,
     private readonly urlsProvider: GameServerResolutionService,
     private readonly mainAppProtocol: RptlProtocolService,
-    private readonly mainAppErrorsHandler: RuntimeErrorsService)
-  {
+    private readonly mainAppErrorsHandler: RuntimeErrorsService,
+    private readonly minigameService: MinigameService
+  ) {
     this.serversStatus = []; // No server to show while no update has been done
 
     // Initializes registry for every known port accessible from its name, make easier to check for a selected server URL later
+    // Same thing for every known minigame type
     this.serverPorts = {};
+    this.serverMinigameTypes = {};
     for (const gameServer of servers) {
       this.serverPorts[gameServer.name] = gameServer.port; // Associates server port with its name
+      this.serverMinigameTypes[gameServer.name] = gameServer.game; // Associates server run minigame type with its name
     }
   }
 
-  /// Begin a session with WS connection on given URL and applies selected class to appropriate HTML element
+  /// Begin a session with WS connection on given URL, applies selected class to appropriate HTML element and configures
+  // `MinigameService` to play on that RpT Minigame type
   private connectWith(serverUrl: string, serverName: string): void {
     // Connects to server using resolved URL from selected name
     this.mainAppProtocol.beginSession(SHARED_CONNECTION_FACTORY.rptlConnectionFor(serverUrl, this.mainAppErrorsHandler));
     this.selectedServerName = serverName;
     // App component will see we connected to RPTL on unregistered mode and will register us as expected
+
+    const selectedMinigameType = this.serverMinigameTypes[serverName]; // Minigame type name obtained by server name
+    let parsedMinigameType: MinigameType;
+    switch (selectedMinigameType) { // Checks for each available RpT Minigame type
+      case 'a':
+        parsedMinigameType = MinigameType.ACORES;
+        break;
+      case 'b':
+        parsedMinigameType = MinigameType.BERMUDES;
+        break;
+      case 'c':
+        parsedMinigameType = MinigameType.CANARIES;
+        break;
+      default:
+        throw new Error(`Unknown minigame: ${selectedMinigameType}`); // Should not happen
+    }
+
+    this.minigameService.playOn(parsedMinigameType); // Configures Minigame service to run on selected minigame server game type
   }
 
   /**

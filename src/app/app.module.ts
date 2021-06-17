@@ -8,6 +8,7 @@ import { FormsModule } from '@angular/forms';
 import { RuntimeErrorsComponent } from './runtime-errors/runtime-errors.component';
 import { ChatComponent } from './chat/chat.component';
 import { LobbyComponent } from './lobby/lobby.component';
+import { MinigameComponent } from './minigame/minigame.component';
 
 
 @NgModule({
@@ -17,7 +18,8 @@ import { LobbyComponent } from './lobby/lobby.component';
     LoginComponent,
     RuntimeErrorsComponent,
     ChatComponent,
-    LobbyComponent
+    LobbyComponent,
+    MinigameComponent
   ],
   imports: [
     BrowserModule,
