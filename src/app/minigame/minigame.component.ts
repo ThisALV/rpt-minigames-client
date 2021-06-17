@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Coordinates, MinigameService, PawnMovement, SquareUpdate } from '../minigame.service';
+import { Coordinates, MinigameService, PawnMovement, PlayersPawnCounts, SquareUpdate } from '../minigame.service';
 import { PartialObserver, Subscribable, Unsubscribable } from 'rxjs';
 import { MinigameType, SquareState } from '../minigame-enums';
 import { ActorsNameService } from '../actors-name.service';
@@ -123,6 +123,36 @@ export class MinigameComponent implements OnInit, OnDestroy {
     definedGrid[move.to.lineNumber - 1][move.to.columnNumber - 1] = pawnColor; // And now destination square is kept by this pawn
   }
 
+  /// Handles getPawnsCount() object to modify players stats
+  private updatePlayers(pawns: PlayersPawnCounts): void {
+    // Conversion avoid to cast this.player each time as we're sure it is defined from here
+    const definedPlayers = this.players as PlayersDetails;
+    // Will be defined inside for-in loop, so give them a value to have the PlayerDetails value type
+    let whitePlayer: { pawns: number, color: SquareState } = { pawns: NaN, color: SquareState.FREE };
+    let blackPlayer: { pawns: number, color: SquareState } = { pawns: NaN, color: SquareState.FREE };
+
+    // Iterates over every player, affecting its reference to one of the two locals depending on its color
+    for (const uid in definedPlayers) {
+      if (!definedPlayers.hasOwnProperty(uid)) { // Required check for property to effectively being data about a player
+        continue;
+      }
+
+      const currentPlayer = definedPlayers[Number(uid)];
+      const currentPlayerColor = currentPlayer.color;
+
+      // Checks for player color
+      if (currentPlayerColor === SquareState.WHITE) {
+        whitePlayer = currentPlayer;
+      } else if (currentPlayerColor === SquareState.BLACK) {
+        blackPlayer = currentPlayer;
+      }
+    }
+
+    // For each player of color, assigns the correct number of pawns stored by color inside given argument
+    whitePlayer.pawns = pawns.white;
+    blackPlayer.pawns = pawns.black;
+  }
+
   /**
    * Handles a browser user which is selecting a square inside the grid, just selecting a pawn if no one is selected yet, moving to
    * selected direction if a previous pawn has already been selected or reset selection if the same square is selected twice.
@@ -178,6 +208,10 @@ export class MinigameComponent implements OnInit, OnDestroy {
 
     this.safelySubscribe(this.minigame.getCurrentPlayer(), { // Listens for current round actor which should play
       next: (currentPlayerOwnerUid: number) => this.currentPlayer = Number(currentPlayerOwnerUid)
+    });
+
+    this.safelySubscribe(this.minigame.getPawnCounts(), { // Listens for pawns count updates to modify counter for each player
+       next: (pawns: PlayersPawnCounts) => this.updatePlayers(pawns)
     });
 
     /*

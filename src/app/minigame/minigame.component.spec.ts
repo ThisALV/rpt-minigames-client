@@ -113,6 +113,22 @@ describe('MinigameComponent', () => {
       expectedGrid[3][2] = SquareState.FREE;
       expectedGrid[1][2] = SquareState.BLACK;
     });
+
+    it('should updates players pawns count when emitted', () => {
+      connection.receive('SERVICE EVENT Minigame START 42 22'); // Starts with ThisALV as white player and Cobalt as black player
+
+      connection.receive('SERVICE EVENT Minigame PAWN_COUNTS 10 2'); // White player: 10 pawns, Black player: 2 pawns
+      expect(component.players).toEqual({
+        42: { pawns: 10, color: SquareState.WHITE }, // White player check
+        22: { pawns: 2, color: SquareState.BLACK } // Black player check
+      });
+
+      connection.receive('SERVICE EVENT Minigame PAWN_COUNTS 8 12'); // White player: 8 pawns, Black player: 12 pawns
+      expect(component.players).toEqual({
+        42: { pawns: 8, color: SquareState.WHITE }, // White player check
+        22: { pawns: 12, color: SquareState.BLACK } // Black player check
+      });
+    });
   });
 
   describe('ngOnDestroy()', () => {
