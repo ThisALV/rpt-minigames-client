@@ -148,6 +148,14 @@ export class MinigameComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Retrieves UIDs list for actors owning a player inside this game session.
+   */
+  getPlayerActors(): number[] {
+    // Lists players registry keys to get UIDs as string, then convert these UIDs into number primitive type
+    return Object.keys(this.players as PlayersDetails).map((stringifiedUid: string) => Number(stringifiedUid));
+  }
+
+  /**
    * Listens for updates on game state and game board.
    */
   ngOnInit(): void {

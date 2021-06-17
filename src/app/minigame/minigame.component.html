@@ -24,7 +24,7 @@
     <button (click)="pass()">&gt;&gt;</button>
 
     <div class="players">
-      <div *ngFor="let playerActorUid in players">
+      <div *ngFor="let playerActorUid of getPlayerActors()">
         <div
           class="player-prefix"
           [ngClass]="{'current': currentPlayer === playerActorUid, 'other': currentPlayer !== playerActorUid}"

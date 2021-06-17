@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MinigameComponent } from './minigame.component';
 import { RptlProtocolService } from 'rpt-webapp-client';
-import { expectArrayToBeEqual, MockedMessagingSubject } from '../testing-helpers';
+import { expectArrayToBeEqual, expectArrayToContainAllOff, MockedMessagingSubject } from '../testing-helpers';
 import { MinigameType, SquareState } from '../minigame-enums';
 import { initialGrids } from '../initial-grids';
 
@@ -162,6 +162,17 @@ describe('MinigameComponent', () => {
     it('should send END command to server', () => {
       component.pass();
       expectArrayToBeEqual(connection.sentMessagesQueue, 'SERVICE REQUEST 0 Minigame END');
+    });
+  });
+
+  describe('getPlayerActors()', () => {
+    it('should retrieves list of UIDs inside game session', () => {
+      connection.receive('SERVICE EVENT Minigame START 42 22'); // Starts with ThisALV as white player and Cobalt as black player
+
+      const uids = component.getPlayerActors();
+      // Expects only ThisALV and Cobalt, respectively UIDs 42 and 22, to be inside game session
+      expect(uids).toHaveSize(2);
+      expectArrayToContainAllOff(uids, 42, 22);
     });
   });
 });
