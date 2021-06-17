@@ -14,7 +14,9 @@
           [ngClass]="{
             'free': square === squareStates.FREE,
             'white': square === squareStates.WHITE,
-            'black': square === squareStates.BLACK
+            'black': square === squareStates.BLACK,
+            'selected': movedPawn !== undefined &&
+              lineIndex + 1 === movedPawn.lineNumber && columnIndex + 1 === movedPawn.columnNumber
           }"
           (click)="select({ lineNumber: lineIndex + 1, columnNumber: columnIndex + 1 })"
         ></div>
@@ -28,7 +30,7 @@
         <span
           class="player-prefix"
           [ngClass]="{'current': currentPlayer === playerActorUid, 'other': currentPlayer !== playerActorUid}"
-        >  </span>
+        ></span>
 
         <span
           class="name"

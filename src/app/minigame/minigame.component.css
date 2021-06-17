@@ -28,6 +28,10 @@
   background-color: black;
 }
 
+.selected {
+  border: 1px solid red;
+}
+
 .current {
   background-color: orange;
   /* Temporary rules to display current player, will be replace for production */
