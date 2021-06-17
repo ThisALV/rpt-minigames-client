@@ -194,7 +194,7 @@ export class MinigameComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Unsubscribes every Observable subscribed inside `ngOnInit()` and resets subscriptions registry.
+   * Unsubscribes every Observable subscribed inside `ngOnInit()`, resets subscriptions registry and resets game session state.
    */
   ngOnDestroy(): void {
     for (const sub of this.subscriptions) {
@@ -202,5 +202,8 @@ export class MinigameComponent implements OnInit, OnDestroy {
     }
 
     this.subscriptions = [];
+
+    // Might have been disconnected in an unexpected fashion, in this case game board must be reset for the next game session
+    this.resetGameState();
   }
 }
