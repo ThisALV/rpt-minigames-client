@@ -251,7 +251,14 @@ export class MinigameService extends SerService {
    * @returns Initial minigame grid for current RpT Minigame
    */
   getInitialGrid(): number[][] {
-    return initialGrids[this.currentMinigame];
+    const copied = initialGrids[this.currentMinigame];
+    const gridCopy: number[][] = [];
+
+    for (const line of copied) { // Performs a deep-copy line by line
+      gridCopy.push(line.slice()); // Slices performs a deep-copy of the line contained columns
+    }
+
+    return gridCopy; // Returns the deep-copy, avoiding initial grid template modifications
   }
 
   /**

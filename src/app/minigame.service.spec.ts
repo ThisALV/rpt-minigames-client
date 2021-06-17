@@ -110,6 +110,16 @@ describe('MinigameService', () => {
      */
   });
 
+  describe('getInitialGrid()', () => {
+    it('should retrieve a deep-copy of the initial grid', () => {
+      const grid = service.getInitialGrid();
+      expect(grid).toEqual(initialGrids[MinigameType.ACORES]); // Default configuration minigame type is Açores
+
+      grid[0][0] = SquareState.FREE; // Tries to modify one square inside grid
+      expect(grid).not.toEqual(initialGrids[MinigameType.ACORES]); // Modification should have been done on the deep-copy only
+    });
+  });
+
   describe('Commands handling', () => {
     it('should define players configuration and pass true to isRunning() on START', () => {
       let run: boolean | undefined;
