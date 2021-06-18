@@ -1,29 +1,31 @@
 <div class="minigame">
   <div class="game-board" *ngIf="isRunning; else latestResult">
-    <div
-      class="game-grid"
-      [ngClass]="{
+    <div class="play">
+      <div
+        class="game-grid"
+        [ngClass]="{
         'acores': runMinigame === minigameTypes.ACORES,
         'bermudes': runMinigame === minigameTypes.BERMUDES,
         'canaries': runMinigame === minigameTypes.CANARIES
       }"
-    >
-      <div class="line" *ngFor="let line of gameGrid; index as lineIndex">
-        <div
-          class="column" *ngFor="let square of line; index as columnIndex"
-          [ngClass]="{
+      >
+        <div class="line" *ngFor="let line of gameGrid; index as lineIndex">
+          <div
+            class="column" *ngFor="let square of line; index as columnIndex"
+            [ngClass]="{
             'free': square === squareStates.FREE,
             'white': square === squareStates.WHITE,
             'black': square === squareStates.BLACK,
             'selected': movedPawn !== undefined &&
               lineIndex + 1 === movedPawn.lineNumber && columnIndex + 1 === movedPawn.columnNumber
           }"
-          (click)="select({ lineNumber: lineIndex + 1, columnNumber: columnIndex + 1 })"
-        ></div>
+            (click)="select({ lineNumber: lineIndex + 1, columnNumber: columnIndex + 1 })"
+          ></div>
+        </div>
       </div>
-    </div>
 
-    <button (click)="pass()">&gt;&gt;</button>
+      <button (click)="pass()">&gt;&gt;</button>
+    </div>
 
     <div class="players">
       <div *ngFor="let playerActorUid of getPlayerActors()">
@@ -46,8 +48,10 @@
   </div>
 
   <ng-template #latestResult>
-    <p class="result" *ngIf="latestWinner !== undefined; then winnerExists; else noWinnerYet"></p>
-    <ng-template #winnerExists>Latest winner: <span class="winner-name">{{latestWinner}}</span></ng-template>
-    <ng-template #noWinnerYet>There isn't any previous winner to show yet.</ng-template>
+    <p class="result">
+      <span *ngIf="latestWinner !== undefined; then winnerExists; else noWinnerYet"></span>
+      <ng-template #winnerExists>Latest winner: <span class="winner-name">{{latestWinner}}</span></ng-template>
+      <ng-template #noWinnerYet>There isn't any previous winner to show yet.</ng-template>
+    </p>
   </ng-template>
 </div>

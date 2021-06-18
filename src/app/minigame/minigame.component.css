@@ -1,19 +1,45 @@
-.game-grid {
+.minigame {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  width: 250px;
-  height: 250px;
+  justify-content: center;
+}
+
+.game-board {
+  flex: auto;
+  display: flex;
+  flex-direction: row;
+}
+
+.play {
+  flex: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+button {
+  flex: initial;
+}
+
+.game-grid {
+  flex: none;
+  display: flex;
+  flex-direction: column;
 }
 
 .line {
-  flex: 1;
+  flex: none;
   display: flex;
   flex-direction: row;
 }
 
 .column {
-  flex: 1;
+  flex: none;
   border: 1px solid black;
+  width: 3rem;
+  height: 3rem;
 }
 
 .free {
@@ -32,10 +58,33 @@
   border: 1px solid red;
 }
 
-.current {
-  background-color: orange;
-  /* Temporary rules to display current player, will be replace for production */
+.players {
+  flex: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.players > div {
+  flex: initial;
+}
+
+.player-prefix {
   display: inline-block;
-  width: 10px;
-  height: 10px;
+  width: 0;
+  height: 0;
+  box-sizing: content-box;
+  border-top: .5rem solid transparent;
+  border-bottom: .5rem solid transparent;
+  border-left: 0.86rem solid transparent;
+}
+
+.current {
+  border-left-color: black;
+}
+
+.result {
+  width: 100%;
+  text-align: center;
 }

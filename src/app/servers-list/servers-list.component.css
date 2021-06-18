@@ -1,0 +1,15 @@
+.servers-list {
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  align-self: center;
+  margin-bottom: 1rem;
+}
+
+.server {
+  flex: initial;
+  margin: .5rem;
+  height: 4rem;
+}

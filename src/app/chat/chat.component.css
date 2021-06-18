@@ -1,0 +1,25 @@
+.chat {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages {
+  flex: auto;
+  overflow-y: scroll;
+}
+
+.message {
+  overflow-x: hidden;
+  /* Deprecated, but overflow-wrap: break-word doesn't work properly */
+  word-break: break-word;
+}
+
+input {
+  flex: initial;
+  height: 1rem;
+}
+
+.name {
+  font-weight: bold;
+}

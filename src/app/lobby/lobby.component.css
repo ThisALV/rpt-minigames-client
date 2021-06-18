@@ -1,0 +1,30 @@
+.lobby {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.state {
+  flex: initial;
+}
+
+ul {
+  flex: initial;
+  display: flex;
+  flex-direction: column;
+}
+
+li {
+  flex: auto;
+}
+
+.ready-button {
+  flex: initial;
+  display: flex;
+  margin: 10%;
+}
+
+button {
+  width: 100%;
+}

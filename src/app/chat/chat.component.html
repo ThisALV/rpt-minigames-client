@@ -1,6 +1,8 @@
 <div class="chat">
-  <div class="message" *ngFor="let msg of messages">
-    <span class="name">{{msg.author}} :</span> <span class="content">{{msg.content}}</span>
+  <div class="messages">
+    <div class="message" *ngFor="let msg of messages">
+      <span class="name">{{msg.author}} : </span><span class="content">{{msg.content}}</span>
+    </div>
   </div>
 
   <input
