@@ -19,6 +19,18 @@ li {
   flex: auto;
 }
 
+.ready-player, .waiting-for-player {
+  font-weight: lighter;
+}
+
+.ready-player {
+  color: rgb(0%, 50%, 0%);
+}
+
+.waiting-for-player {
+  color: rgb(50%, 0%, 0%);
+}
+
 .ready-button {
   flex: initial;
   display: flex;
@@ -27,4 +39,12 @@ li {
 
 button {
   width: 100%;
+}
+
+button.ready {
+  background-color: rgb(50%, 0%, 0%);
+}
+
+button.not-ready {
+  background-color: rgb(0%, 50%, 0%);
 }

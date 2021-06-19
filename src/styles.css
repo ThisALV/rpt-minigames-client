@@ -7,4 +7,54 @@ body, html {
 body {
   font-family: sans-serif;
   overflow: hidden;
+  background-color: rgb(10%, 10%, 10%);
+  color: rgb(75%, 75%, 75%);
+  font-weight: bold;
+}
+
+input[type="text"] {
+  background-color: rgb(10%, 10%, 10%);
+  color: rgb(50%, 50%, 50%);
+  font-size: large;
+  border-radius: .5rem;
+  border: none;
+  display: inline-block;
+  padding-left: .25rem;
+  box-sizing: border-box;
+  /* For box-sizing to be applied, width and height must be set */
+  width: 100%;
+  height: 2rem;
+}
+
+input[type="text"]:focus {
+  outline: none;
+  background-color: rgb(20%, 20%, 20%);
+}
+
+button {
+  outline: none;
+  border: none;
+  color: rgba(100%, 100%, 100%, .75);
+  background-color: rgb(10%, 10%, 10%);
+  font-weight: bolder;
+  font-size: larger;
+  border-radius: .75rem;
+  padding: .5em;
+}
+
+button, input[type="text"] {
+  box-shadow: .125rem .125rem .25rem black;
+  transition-duration: .25s;
+}
+
+button:hover, input[type="text"]:hover {
+  filter: brightness(150%);
+}
+
+button:active, input[type="text"]:focus {
+  filter: brightness(200%);
+}
+
+button:hover {
+  cursor: pointer;
 }

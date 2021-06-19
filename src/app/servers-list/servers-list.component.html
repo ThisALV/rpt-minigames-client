@@ -1,21 +1,29 @@
 <div class="servers-list">
-  <button class="update" (click)="checkout()">Update status</button>
+  <button class="update" (click)="checkout()">Update servers</button>
 
   <div class="server" *ngFor="let server of serversStatus"
        [ngClass]="{'selected': server.name === selectedServerName}" (click)="select(server.name)">
 
-    <div class="server-details">
-      <span class="name">{{server.name}}</span> | <span class="game">{{server.gameName}}</span>
+    <div class="details">
+      <div class="name">{{server.name}}</div>
+      <div class="game">{{server.gameName}}</div>
+
+      <div class="availability">
+        <div *ngIf="server.status !== undefined; else unavailable" class="available">
+          Players: <span class="status" [ngClass]="{
+            'free': toPrimitive(server.status.currentActors) !== toPrimitive(server.status.actorsLimit),
+            'full': toPrimitive(server.status.currentActors) === toPrimitive(server.status.actorsLimit)
+          }">{{server.status.currentActors}}/{{server.status.actorsLimit}}</span>
+        </div>
+
+        <ng-template #unavailable>
+          <div class="unavailable">Not responding</div>
+        </ng-template>
+      </div>
     </div>
 
-    <div class="availability">
-      <div *ngIf="server.status !== undefined; else unavailable" class="available">
-        Status: <span class="status">{{server.status.currentActors}}/{{server.status.actorsLimit}}</span>
-      </div>
-
-      <ng-template #unavailable>
-        <div class="unavailable">Could not get server status.</div>
-      </ng-template>
+    <div class="arrow">
+      <div>&gt;</div>
     </div>
 
   </div>

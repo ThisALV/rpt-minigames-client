@@ -28,11 +28,13 @@
     </div>
 
     <div class="players">
-      <div *ngFor="let playerActorUid of getPlayerActors()">
-        <span
-          class="player-prefix"
-          [ngClass]="{'current': currentPlayer === playerActorUid, 'other': currentPlayer !== playerActorUid}"
-        ></span>
+      <div
+        *ngFor="let playerActorUid of getPlayerActors()"
+        class="player-prefix"
+        [ngClass]="{'current': currentPlayer === playerActorUid, 'other': currentPlayer !== playerActorUid}"
+      >
+
+        <span class="player-prefix">-&gt;</span>
 
         <span
           class="name"
@@ -43,6 +45,7 @@
         >
           {{namesProvider.nameFor(playerActorUid)}}
         </span>: <span class="pawns-count">{{players![playerActorUid].pawns}}</span>
+
       </div>
     </div>
   </div>

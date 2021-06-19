@@ -1,15 +1,95 @@
 .servers-list {
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 button {
   align-self: center;
-  margin-bottom: 1rem;
+  margin: 1rem;
 }
 
 .server {
   flex: initial;
   margin: .5rem;
-  height: 4rem;
+  padding: .5rem;
+  height: 3.5rem;
+  transition-duration: .25s;
+  border-radius: 2rem;
+  display: flex;
+  flex-direction: row;
+}
+
+.details {
+  flex: 4;
+  display: flex;
+  flex-direction: column;
+}
+
+.arrow {
+  flex: 1;
+  opacity: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.server:hover > .arrow {
+  opacity: 1;
+}
+
+.arrow > div {
+  flex: initial;
+  width: 100%;
+  text-align: center;
+  font-size: xx-large;
+}
+
+.name {
+  flex: initial;
+}
+
+.game {
+  flex: initial;
+  font-weight: lighter;
+  font-size: smaller;
+  color: rgb(50%, 50%, 50%);
+}
+
+.availability {
+  flex: initial;
+  font-size: small;
+  font-weight: normal;
+}
+
+.server:hover {
+  background-color: white;
+  cursor: pointer;
+}
+
+.server:hover * {
+  color: black;
+  transition-duration: .25s;
+}
+
+.selected {
+  color: white;
+  background-color: black;
+  transition-duration: .5s;
+}
+
+.status {
+  font-weight: bold;
+}
+
+.free {
+  color: rgb(0%, 75%, 0%);
+}
+
+.full {
+  color: rgb(100%, 50%, 0%);
+}
+
+.unavailable {
+  color: rgb(75%, 0%, 0%);
 }

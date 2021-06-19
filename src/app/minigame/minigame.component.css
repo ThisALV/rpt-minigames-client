@@ -70,21 +70,23 @@ button {
   flex: initial;
 }
 
-.player-prefix {
-  display: inline-block;
-  width: 0;
-  height: 0;
-  box-sizing: content-box;
-  border-top: .5rem solid transparent;
-  border-bottom: .5rem solid transparent;
-  border-left: 0.86rem solid transparent;
+.other .player-prefix {
+  opacity: 0;
+}
+
+.current .player-prefix {
+  opacity: 1;
 }
 
 .current {
-  border-left-color: black;
+  filter: brightness(150%);
 }
 
 .result {
   width: 100%;
   text-align: center;
+}
+
+.winner-name {
+  font-weight: normal;
 }
