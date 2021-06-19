@@ -20,7 +20,7 @@ export class LoginService {
    * Constructs service providing an empty name.
    */
   constructor() {
-    this.name = String(Math.random()).slice(0, 5);
+    this.name = '';
   }
 
   /**
