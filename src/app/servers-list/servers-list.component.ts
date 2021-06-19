@@ -30,6 +30,11 @@ function rptlConnectionFactory(currentServerUrl: string, errorsHandler: RuntimeE
 })
 export class ServersListComponent implements OnInit, OnDestroy {
   /**
+   * Provides Number() function, used without new to convert every number into a primitive value.
+   */
+  toPrimitive = Number;
+
+  /**
    * Latest updated servers status list.
    */
   serversStatus: GameServer[];
