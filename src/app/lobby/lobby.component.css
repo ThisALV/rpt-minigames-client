@@ -3,6 +3,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  padding: 5%;
+  text-align: center;
 }
 
 .state {
@@ -13,6 +15,7 @@ ul {
   flex: initial;
   display: flex;
   flex-direction: column;
+  list-style: none;
 }
 
 li {
