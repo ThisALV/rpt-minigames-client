@@ -12,6 +12,17 @@ body {
   font-weight: bold;
 }
 
+.can-rotate {
+  display: flex;
+  flex-direction: row;
+}
+
+@media (orientation: portrait) {
+  .can-rotate {
+    flex-direction: column;
+  }
+}
+
 input[type="text"] {
   background-color: rgb(10%, 10%, 10%);
   color: rgb(50%, 50%, 50%);

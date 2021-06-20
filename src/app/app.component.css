@@ -37,8 +37,12 @@ app-runtime-errors {
 
 .room {
   flex: auto;
-  display: flex;
-  flex-direction: row;
+}
+
+@media (orientation: portrait) {
+  .room {
+    flex-direction: column-reverse;
+  }
 }
 
 .disconnected {
@@ -50,6 +54,12 @@ app-runtime-errors {
 
 app-chat {
   flex: 1;
+}
+
+@media (orientation: portrait) {
+  app-chat {
+    flex: 2;
+  }
 }
 
 app-minigame {

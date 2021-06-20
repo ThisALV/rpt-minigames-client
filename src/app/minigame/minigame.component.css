@@ -7,8 +7,6 @@
 
 .game-board {
   flex: auto;
-  display: flex;
-  flex-direction: row;
 }
 
 .play {
