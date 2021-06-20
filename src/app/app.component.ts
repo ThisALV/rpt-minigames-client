@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { LoginService } from './login.service';
 import { Subscription } from 'rxjs';
 import { RptlProtocolService, RptlState } from 'rpt-webapp-client';
+import { MinigameService } from './minigame.service';
 
 
 /**
@@ -20,18 +21,26 @@ export class AppComponent implements OnInit, OnDestroy {
    */
   insideRoom: boolean;
 
+  /**
+   * `true` if registered client is playing a game session so lobby must be hidden.
+   */
+  insideGame: boolean;
+
   private stateSub?: Subscription; // Subscription for RPTL getState() observer
+  private isRunningSub?: Subscription; // Subscription for MinigameService isRunning() observer
 
   constructor(
     private readonly rptlProtocol: RptlProtocolService,
+    private readonly gameStateProvider: MinigameService,
     private readonly loginData: LoginService
   ) {
     this.insideRoom = false;
+    this.insideGame = false;
   }
 
   /**
    * Listens for current RPTL state and registers client when it connects to a game server *for other reason than checkout*, then
-   * displays lobby room when registration is done.
+   * displays server room when registration is done. If game is running, lobby is hidden.
    */
   ngOnInit(): void {
     this.stateSub = this.rptlProtocol.getState().subscribe({
@@ -51,9 +60,15 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     });
+
+    // When game session has started, hides lobby and displays game board
+    this.isRunningSub = this.gameStateProvider.isRunning().subscribe({
+      next: (playing: boolean) => this.insideGame = playing
+    });
   }
 
   ngOnDestroy(): void {
     this.stateSub?.unsubscribe(); // Stops listening for RPTL state as application will be destroyed
+    this.isRunningSub?.unsubscribe(); // Same thing for game session state
   }
 }

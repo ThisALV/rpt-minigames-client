@@ -62,8 +62,9 @@ describe('AppComponent', () => {
     fixture.detectChanges();
   });
 
+  it('should create component', () => expect(component).toBeTruthy());
+
   it('should create and listen for connection to begin registration, then display room when registered', () => {
-    expect(component).toBeTruthy();
     expect(component.insideRoom).toBeFalse(); // Should begin as not connected inside any server
 
     rptlProtocol.beginSession(connection); // Connects to server using mocked connection
@@ -75,5 +76,28 @@ describe('AppComponent', () => {
 
     connection.complete(); // Close connection with mocked server
     expect(component.insideRoom).toBeFalse(); // We were disconnected, no longer inside Lobby room because connection was closed
+  });
+
+  it('should hide lobby component when game starts, and display it again when game stops', () => {
+    expect(component.insideGame).toBeFalse(); // Should begin as not playing as we're not connected yet
+
+    rptlProtocol.beginSession(connection); // Connects to a server, will automatically try to register
+    connection.receive('REGISTRATION 42 ThisALV 22 Redox'); // Registration done, with another player so we can start the game
+
+    expect(component.insideGame).toBeFalse(); // Should still be false as we're not playing yet
+    connection.receive('SERVICE EVENT Minigame START 42 22'); // Starts a game session with our 2 registered players
+    expect(component.insideGame).toBeTrue(); // Running a game session
+    connection.receive('SERVICE EVENT Minigame STOP'); // Stops game session
+    expect(component.insideGame).toBeFalse();
+  });
+
+  it('should display lobby again even if game terminated unexpectedly', () => {
+    rptlProtocol.beginSession(connection);
+    connection.receive('REGISTRATION 42 ThisALV 22 Redox');
+
+    connection.receive('SERVICE EVENT Minigame START 42 22'); // Starts a game session with our 2 registered players
+    expect(component.insideGame).toBeTrue(); // Running a game session
+    connection.complete(); // Stops session abnormally by leaving room because of a closed connection
+    expect(component.insideGame).toBeFalse(); // Should have been set back to false anyways
   });
 });

@@ -9,8 +9,9 @@
   <main>
     <div *ngIf="insideRoom; else disconnected" class="room">
       <app-chat></app-chat>
+
       <app-minigame></app-minigame>
-      <app-lobby></app-lobby>
+      <app-lobby *ngIf="!insideGame"></app-lobby>
     </div>
 
     <ng-template #disconnected>
