@@ -18,7 +18,7 @@
   </ul>
 
   <div class="ready-button" (click)="toggleReady()">
-    <button *ngIf="isOurselvesReady(); else notready" class="ready">Cancel</button>
-    <ng-template #notready><button class="not-ready">Ready</button></ng-template>
+    <button *ngIf="isOurselvesReady(); else notready" class="ready">Ready</button>
+    <ng-template #notready><button class="not-ready">Not ready</button></ng-template>
   </div>
 </div>
