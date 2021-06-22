@@ -1,14 +1,35 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { AfterViewChecked, Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { Coordinates, MinigameService, PawnMovement, PlayersPawnCounts, SquareUpdate } from '../minigame.service';
 import { PartialObserver, Subscribable, Unsubscribable } from 'rxjs';
 import { MinigameType, SquareState } from '../minigame-enums';
 import { ActorsNameService } from '../actors-name.service';
+import { ResizeObserver } from 'resize-observer';
 
 
 /**
  * Player owner actor UID associated with its current number of pawns inside game grid and its pawn color.
  */
 export type PlayersDetails = { [playerActorUid: number]: { pawns: number, color: SquareState } };
+
+
+/**
+ * Latest value assigned to `style.width` on grid HTML element, provided for testing purpose.
+ */
+export let latestWidthTrace: string | undefined;
+
+
+/**
+ * `width` attribute of given element is set to its `height`.
+ *
+ * @param gameGrid element to give a square shape for
+ *
+ * @note For testing purpose, because callbacks zone must be executed then stopped before expectations which requires to removes grid
+ * HTML element, a debug value `latestWidthTrace` keeps track of the width assigned inside the latest call.
+ */
+function readjustGameGrid(gameGrid: HTMLElement): void {
+  gameGrid.style.width = `${gameGrid.clientHeight}px`; // Retrieves px height so assign a px-formatted width
+  latestWidthTrace = gameGrid.style.width;
+}
 
 
 /**
@@ -22,7 +43,7 @@ export type PlayersDetails = { [playerActorUid: number]: { pawns: number, color:
   templateUrl: './minigame.component.html',
   styleUrls: ['./minigame.component.css']
 })
-export class MinigameComponent implements OnInit, OnDestroy {
+export class MinigameComponent implements OnInit, OnDestroy, AfterViewChecked {
   /**
    * Accessible enum values for `MinigameType`.
    */
@@ -72,10 +93,26 @@ export class MinigameComponent implements OnInit, OnDestroy {
 
   /// Contains every Subscription made on `ngOnInit()` that must be freed inside `ngOnDestroy()`.
   private subscriptions: Unsubscribable[];
+  /// Observer that sets grid width to its height so it will be shaped like a square
+  private gridObserver: ResizeObserver;
+  /// To modify its width, we'll have to access DOM element anyway, it's easier than using callback arg
+  private gameGridElement: HTMLElement | null;
 
-  constructor(private readonly minigame: MinigameService, public readonly namesProvider: ActorsNameService) {
+  constructor(
+    private readonly callbacksZone: NgZone,
+    private readonly minigame: MinigameService,
+    public readonly namesProvider: ActorsNameService
+  ) {
     this.isRunning = false; // Waits for server to notifies us that a game is running
     this.subscriptions = []; // No subscription at ngOnInit() not run yet because we're inside ctor
+    this.gameGridElement = null; // Element is selected at component initialization
+
+    // We'll only observe .game-grid resized events, so when observer emits, we known this precise element has been resized
+    this.gridObserver = new ResizeObserver(() =>
+      this.callbacksZone.run(() => // Runs when view has been updated has been done so width property is actually modified
+        readjustGameGrid(this.gameGridElement as HTMLElement)
+      )
+    );
   }
 
   /// Subscribes to an Observable and automatically cancels subscription at component destruction
@@ -232,6 +269,10 @@ export class MinigameComponent implements OnInit, OnDestroy {
    * Unsubscribes every Observable subscribed inside `ngOnInit()`, resets subscriptions registry and resets game session state.
    */
   ngOnDestroy(): void {
+    if (this.gameGridElement !== null) { // If currently observed, must be unobserved before destruction
+      this.gridObserver.unobserve(this.gameGridElement as Element); // Must be unobserved before an other HTML grid element is assigned
+    }
+
     for (const sub of this.subscriptions) {
       sub.unsubscribe();
     }
@@ -240,5 +281,21 @@ export class MinigameComponent implements OnInit, OnDestroy {
 
     // Might have been disconnected in an unexpected fashion, in this case game board must be reset for the next game session
     this.resetGameState();
+  }
+
+  /**
+   * Observes .game-grid element size to shape it like a scare if is displayed and it is not already observing. Element will be
+   * unobserved if it is currently observing and HTML element no longer exist.
+   */
+  ngAfterViewChecked(): void {
+    const isObserving = this.gameGridElement !== null; // true if component is already checking for grid size to have correct dimensions
+
+    if (this.isRunning && !isObserving) { // If game is running so grid exists
+      this.gameGridElement = document.querySelector('.game-grid'); // For this life-cycle, document element will be the same
+      this.gridObserver.observe(this.gameGridElement as Element); // Listen for height of flex auto game grid to be changed by flex-box
+    } else if (!this.isRunning && isObserving) { // Game grid just been dismisses now
+      this.gridObserver.unobserve(this.gameGridElement as Element); // Must be unobserved before an other HTML grid element is assigned
+      this.gameGridElement = null; // No HTML component is available and we're no longer observing
+    }
   }
 }

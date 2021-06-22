@@ -1,9 +1,17 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MinigameComponent } from './minigame.component';
+import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { latestWidthTrace, MinigameComponent } from './minigame.component';
 import { RptlProtocolService } from 'rpt-webapp-client';
 import { expectArrayToBeEqual, expectArrayToContainAllOff, MockedMessagingSubject } from '../testing-helpers';
 import { MinigameType, SquareState } from '../minigame-enums';
 import { initialGrids } from '../initial-grids';
+
+
+/**
+ * Calls each callback registered `requestAnimationFrame()`.
+ */
+function flushNextFrame(): void {
+  tick(1000); // A frame will not last more than 1s, 1fps minimum supported
+}
 
 
 describe('MinigameComponent', () => {
@@ -44,24 +52,24 @@ describe('MinigameComponent', () => {
   describe('ngOnInit()', () => {
     it('should match minigame service state, setup fields when started and reset fields when terminated',
       () =>
-    {
-      connection.receive('SERVICE EVENT Minigame START 42 22'); // Starts with ThisALV as white player and Cobalt as black player
-      expect(component.isRunning).toBeTrue();
-      expect(component.runMinigame).toEqual(MinigameType.ACORES); // Açores is the default minigame for MinigameService configuration
-      expect(component.gameGrid).toEqual(initialGrids[MinigameType.ACORES]); // Grid for the right minigame should have been assigned
-      expect(component.players).toEqual({ // Should have ThisALV as white, Cobalt as black, with both 12 pawns inside grid
-        42: { pawns: 12, color: SquareState.WHITE },
-        22: { pawns: 12, color: SquareState.BLACK }
-      });
+      {
+        connection.receive('SERVICE EVENT Minigame START 42 22'); // Starts with ThisALV as white player and Cobalt as black player
+        expect(component.isRunning).toBeTrue();
+        expect(component.runMinigame).toEqual(MinigameType.ACORES); // Açores is the default minigame for MinigameService configuration
+        expect(component.gameGrid).toEqual(initialGrids[MinigameType.ACORES]); // Grid for the right minigame should have been assigned
+        expect(component.players).toEqual({ // Should have ThisALV as white, Cobalt as black, with both 12 pawns inside grid
+          42: { pawns: 12, color: SquareState.WHITE },
+          22: { pawns: 12, color: SquareState.BLACK }
+        });
 
-      connection.receive('SERVICE EVENT Minigame STOP'); // Stops minigame
-      expect(component.isRunning).toBeFalse();
-      // Every game session field should be initialized because game session has been stopped
-      expect(component.runMinigame).toBeUndefined();
-      expect(component.currentPlayer).toBeUndefined();
-      expect(component.gameGrid).toBeUndefined();
-      expect(component.movedPawn).toBeUndefined();
-    });
+        connection.receive('SERVICE EVENT Minigame STOP'); // Stops minigame
+        expect(component.isRunning).toBeFalse();
+        // Every game session field should be initialized because game session has been stopped
+        expect(component.runMinigame).toBeUndefined();
+        expect(component.currentPlayer).toBeUndefined();
+        expect(component.gameGrid).toBeUndefined();
+        expect(component.movedPawn).toBeUndefined();
+      });
 
     it('should set winner name when winner UID is emitted', () => {
       connection.receive('SERVICE EVENT Minigame START 42 22'); // Starts with ThisALV as white player and Cobalt as black player
@@ -129,6 +137,25 @@ describe('MinigameComponent', () => {
         22: { pawns: 12, color: SquareState.BLACK } // Black player check
       });
     });
+  });
+
+  describe('ngAfterViewChecked()', () => {
+    it('should readjust game grid size so it keeps a square shape', fakeAsync(() => {
+      connection.receive('SERVICE EVENT Minigame START 42 22'); // Will runs a minigame session then requires to display a game grid
+      fixture.detectChanges(); // Will call ngAfterContentChecked() which will actually displays the game grid
+      flushNextFrame();
+
+      const gridElement = document.querySelector('.game-grid') as HTMLElement; // Retrieves element to control its dimensions
+      gridElement.style.height = '400px'; // Changes element height to 400px
+      fixture.detectChanges();
+      flushNextFrame(); // Runs readjusting callback from NgZone
+
+      connection.receive('SERVICE EVENT Minigame STOP'); // Then stops game session to dismiss grid so its height will no longer be observed
+      fixture.detectChanges(); // Runs one cycle to unobserve grid dimensions
+
+      expect(fixture.isStable()).toBeTrue(); // Grid element no longer exist so it should be unobserved
+      expect(latestWidthTrace).toEqual('400px'); // Width should have followed height being set to 400px too
+    }));
   });
 
   describe('ngOnDestroy()', () => {
