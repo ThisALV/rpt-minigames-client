@@ -1,59 +1,66 @@
 <div class="minigame">
-  <div class="game-board can-rotate" *ngIf="isRunning; else latestResult">
+  <div
+    class="game-board can-rotate"
+    [ngClass]="{
+      'acores': runMinigame === minigameTypes.ACORES,
+      'bermudes': runMinigame === minigameTypes.BERMUDES,
+      'canaries': runMinigame === minigameTypes.CANARIES
+    }"
+    *ngIf="isRunning; else latestResult"
+  >
+
     <div class="play">
-      <div
-        class="game-grid"
-        [ngClass]="{
-        'acores': runMinigame === minigameTypes.ACORES,
-        'bermudes': runMinigame === minigameTypes.BERMUDES,
-        'canaries': runMinigame === minigameTypes.CANARIES
-      }"
-      >
+      <div class="game-grid">
         <div class="line" *ngFor="let line of gameGrid; index as lineIndex">
           <div
             class="column" *ngFor="let square of line; index as columnIndex"
-            [ngClass]="{
-            'free': square === squareStates.FREE,
-            'white': square === squareStates.WHITE,
-            'black': square === squareStates.BLACK,
-            'selected': movedPawn !== undefined &&
-              lineIndex + 1 === movedPawn.lineNumber && columnIndex + 1 === movedPawn.columnNumber
-          }"
             (click)="select({ lineNumber: lineIndex + 1, columnNumber: columnIndex + 1 })"
-          ></div>
+            [ngClass]="{
+              'selected': movedPawn !== undefined &&
+                  lineIndex + 1 === movedPawn.lineNumber && columnIndex + 1 === movedPawn.columnNumber
+            }"
+          >
+            <div
+              class="square"
+              [ngClass]="{
+                'free': square === squareStates.FREE,
+                'white': square === squareStates.WHITE,
+                'black': square === squareStates.BLACK
+              }"
+            ></div>
+          </div>
         </div>
       </div>
 
-      <button (click)="pass()">&gt;&gt;</button>
+      <button (click)="pass()">&#x25b6;&#x25b6;</button>
     </div>
 
     <div class="players">
       <div
         *ngFor="let playerActorUid of getPlayerActors()"
-        class="player-prefix"
-        [ngClass]="{'current': currentPlayer === playerActorUid, 'other': currentPlayer !== playerActorUid}"
+        class="player"
+        [ngClass]="{
+          'current': currentPlayer === playerActorUid,
+          'other': currentPlayer !== playerActorUid,
+          'white-player': players![playerActorUid].color === squareStates.WHITE,
+          'black-player': players![playerActorUid].color === squareStates.BLACK
+        }"
       >
 
-        <span class="player-prefix">-&gt;</span>
+        <div class="player-prefix">&#x279c;</div>
 
-        <span
-          class="name"
-          [ngClass]="{
-            'white-player': players![playerActorUid].color === squareStates.WHITE,
-            'black-player': players![playerActorUid].color === squareStates.BLACK
-           }"
-        >
-          {{namesProvider.nameFor(playerActorUid)}}
-        </span>: <span class="pawns-count">{{players![playerActorUid].pawns}}</span>
+        <div class="name"><span class="color"></span> {{namesProvider.nameFor(playerActorUid)}}</div>
+        <div class="pawns-count">{{players![playerActorUid].pawns}} pawns remaining</div>
 
       </div>
     </div>
+
   </div>
 
   <ng-template #latestResult>
     <p class="result">
       <span *ngIf="latestWinner !== undefined; then winnerExists; else noWinnerYet"></span>
-      <ng-template #winnerExists>Latest winner: <span class="winner-name">{{latestWinner}}</span></ng-template>
+      <ng-template #winnerExists>Latest winner: <br /><span class="winner-name">{{latestWinner}}</span></ng-template>
       <ng-template #noWinnerYet>There isn't any previous winner to show yet.</ng-template>
     </p>
   </ng-template>
