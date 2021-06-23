@@ -1,23 +1,32 @@
 .servers-list {
   display: flex;
   flex-direction: column;
+  height: 100%;
   overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.servers-list::-webkit-scrollbar {
+  width: 0;
 }
 
 button {
   align-self: center;
   margin: 1rem;
+  font-size: larger;
 }
 
 .server {
   flex: initial;
   margin: .5rem;
-  padding: .5rem;
+  padding: .5rem .5rem .5rem .5rem;
+  min-height: 2.5rem;
   height: 3.5rem;
   transition-duration: .25s;
   border-radius: 2rem;
   display: flex;
   flex-direction: row;
+  overflow-y: hidden;
 }
 
 .details {
@@ -54,12 +63,14 @@ button {
   font-weight: lighter;
   font-size: smaller;
   color: rgb(50%, 50%, 50%);
+  margin-left: 12.5%;
 }
 
 .availability {
   flex: initial;
   font-size: small;
   font-weight: normal;
+  margin-left: 25%;
 }
 
 .server:hover {
@@ -92,4 +103,5 @@ button {
 
 .unavailable {
   color: rgb(75%, 0%, 0%);
+  font-size: smaller;
 }

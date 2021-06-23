@@ -11,7 +11,8 @@ nav {
   background-color: rgb(5%, 5%, 5%);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-evenly;
+  box-shadow: 0 0 .5rem black;
 }
 
 app-login {
@@ -19,8 +20,8 @@ app-login {
 }
 
 app-servers-list {
-  margin-top: 2rem;
   flex: initial;
+  overflow-y: hidden;
 }
 
 main {

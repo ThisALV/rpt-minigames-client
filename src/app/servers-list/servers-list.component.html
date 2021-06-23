@@ -1,5 +1,5 @@
 <div class="servers-list">
-  <button class="update" (click)="checkout()">Update servers</button>
+  <button class="update" (click)="checkout()">&#x21bb; Update</button>
 
   <div class="server" *ngFor="let server of serversStatus"
        [ngClass]="{'selected': server.name === selectedServerName}" (click)="select(server.name)">
