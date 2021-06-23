@@ -1,21 +1,15 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Subject, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { GameServer } from '../game-server';
 import { ServersListService } from '../servers-list.service';
 import { RuntimeErrorsService } from '../runtime-errors.service';
-import { SHARED_CONNECTION_FACTORY } from '../game-server-connection';
+import { rptlConnectionFactory, SHARED_CONNECTION_FACTORY } from '../game-server-connection';
 import { servers } from '../servers.json';
 import { GameServerResolutionService } from '../game-server-resolution.service';
 import { RptlProtocolService, RptlState } from 'rpt-webapp-client';
 import { first } from 'rxjs/operators';
 import { MinigameService } from '../minigame.service';
 import { MinigameType } from '../minigame-enums';
-
-
-// Used by ServersList component to provides a real RPTL configured WebSocket connection handling error with given RuntimeErrors service
-function rptlConnectionFactory(currentServerUrl: string, errorsHandler: RuntimeErrorsService): Subject<string> {
-  return SHARED_CONNECTION_FACTORY.rptlConnectionFor(currentServerUrl, errorsHandler);
-}
 
 
 /**

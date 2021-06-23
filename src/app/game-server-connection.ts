@@ -92,6 +92,17 @@ export class RptlConnectionFactory {
 
 
 /**
+ * @param currentServerUrl URL of game server to connects with
+ * @param errorsHandler Service which is handling connection errors
+ *
+ * @returns `SHARED_CONNECTION_FACTORY.rptlConnectionFor()` call with given arguments
+ */
+export function rptlConnectionFactory(currentServerUrl: string, errorsHandler: RuntimeErrorsService): Subject<string> {
+  return SHARED_CONNECTION_FACTORY.rptlConnectionFor(currentServerUrl, errorsHandler);
+}
+
+
+/**
  * Use this shared object to call a spy-mockable `rptlConnectionFor()` method.
  */
 export const SHARED_CONNECTION_FACTORY: RptlConnectionFactory = new RptlConnectionFactory();
