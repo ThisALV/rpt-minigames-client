@@ -5,7 +5,7 @@ body, html {
 }
 
 body {
-  font-family: sans-serif;
+  font-family: 'Arial', sans-serif;
   overflow: hidden;
   background-color: rgb(10%, 10%, 10%);
   color: rgb(75%, 75%, 75%);
