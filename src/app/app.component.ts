@@ -3,6 +3,9 @@ import { LoginService } from './login.service';
 import { Subscription } from 'rxjs';
 import { RptlProtocolService, RptlState } from 'rpt-webapp-client';
 import { MinigameService } from './minigame.service';
+import { ServersListService } from './servers-list.service';
+import { rptlConnectionFactory } from './game-server-connection';
+import { delay } from 'rxjs/operators';
 
 
 /**
@@ -32,7 +35,8 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     private readonly rptlProtocol: RptlProtocolService,
     private readonly gameStateProvider: MinigameService,
-    private readonly loginData: LoginService
+    private readonly loginData: LoginService,
+    private readonly serversStatusList: ServersListService
   ) {
     this.insideRoom = false;
     this.insideGame = false;
@@ -40,7 +44,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   /**
    * Listens for current RPTL state and registers client when it connects to a game server *for other reason than checkout*, then
-   * displays server room when registration is done. If game is running, lobby is hidden.
+   * displays server room when registration is done. If game is running, lobby is hidden. When registered, performs a servers status
+   * list update.
    */
   ngOnInit(): void {
     this.stateSub = this.rptlProtocol.getState().subscribe({
@@ -53,6 +58,12 @@ export class AppComponent implements OnInit, OnDestroy {
             break;
           case RptlState.REGISTERED: // Registered inside server, can show room with other actors
             this.insideRoom = true;
+
+            // As client has joined and registered, a server status has been changed and must be updated again
+            if (!this.serversStatusList.isUpdating()) { // Might already be updating list
+              this.serversStatusList.update(rptlConnectionFactory, delay(500));
+            }
+
             break;
           case RptlState.DISCONNECTED: // No longer inside server, dismisses lobby room
             this.insideRoom = false;

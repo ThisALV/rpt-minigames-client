@@ -21,9 +21,11 @@ describe('AppComponent', () => {
 
   let connection: MockedMessagingSubject; // Required to mocks server registration command which will change RPTL mode into registered
   let rptlProtocol: RptlProtocolService; // Used to make connection and registration into game server
+  let serversStatusList: MockedServersListProvider; // Used to check if a checkout operation has been started at registration
 
   beforeEach(async () => {
     connection = new MockedMessagingSubject();
+    serversStatusList = new MockedServersListProvider(); // We need to have the mocked type to access the updating field
 
     // Mocks connection provider to give a random mocked connection subject for every connection established by the ServersList
     // component, which doesn't matter here because we're not going to use that way to connect with a server but we're going to use the
@@ -44,7 +46,7 @@ describe('AppComponent', () => {
         },
         {
           // Mocks a predetermined list of servers status retrieved and displayed by ServersList service/component
-          provide: ServersListService, useClass: MockedServersListProvider
+          provide: ServersListService, useValue: serversStatusList
         },
         {
           // Mocks a login which is always UID 42 with name ThisALV
@@ -99,5 +101,30 @@ describe('AppComponent', () => {
     expect(component.insideGame).toBeTrue(); // Running a game session
     connection.complete(); // Stops session abnormally by leaving room because of a closed connection
     expect(component.insideGame).toBeFalse(); // Should have been set back to false anyways
+  });
+
+  it('should start a servers checkout when registered if not already updating', () => {
+    let updatedServers = false; // Required to listen if a new value has been received
+    serversStatusList.getListStatus().subscribe({
+      next: () => updatedServers = true
+    });
+
+    rptlProtocol.beginSession(connection);
+    expect(updatedServers).toBeFalse(); // Should not occurs at connection but at registration
+    connection.receive('REGISTRATION 42 ThisALV 22 Redox');
+    expect(updatedServers).toBeTrue(); // Unable to use isUpdating() as mocked ServersList service updates immediately
+  });
+
+  it('should not start a servers checkout when registered if already updating', () => {
+    let updatedServers = false; // Required to listen if a new value has been received
+    serversStatusList.getListStatus().subscribe({
+      next: () => updatedServers = true
+    });
+
+    rptlProtocol.beginSession(connection);
+    serversStatusList.updating = true; // Between connection and registration, user decides to update the status list
+    expect(updatedServers).toBeFalse(); // Should not occurs at connection but at registration
+    connection.receive('REGISTRATION 42 ThisALV 22 Redox');
+    expect(updatedServers).toBeFalse(); // Should not have tried to start a second servers list update at the same time
   });
 });
