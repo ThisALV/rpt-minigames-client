@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { LoginService } from './login.service';
-import { Subscription } from 'rxjs';
+import { interval, Subscription } from 'rxjs';
 import { RptlProtocolService, RptlState } from 'rpt-webapp-client';
 import { MinigameService } from './minigame.service';
 import { ServersListService } from './servers-list.service';
@@ -31,6 +31,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private stateSub?: Subscription; // Subscription for RPTL getState() observer
   private isRunningSub?: Subscription; // Subscription for MinigameService isRunning() observer
+  private statusUpdateSub?: Subscription; // Subscription for interval() observer which automatically refresh servers state
 
   constructor(
     private readonly rptlProtocol: RptlProtocolService,
@@ -76,10 +77,20 @@ export class AppComponent implements OnInit, OnDestroy {
     this.isRunningSub = this.gameStateProvider.isRunning().subscribe({
       next: (playing: boolean) => this.insideGame = playing
     });
+
+    // Every 5s, automatically updates servers status list if is not already updating
+    this.statusUpdateSub = interval(5000).subscribe({
+      next: () => {
+        if (!this.serversStatusList.isUpdating()) { // Might be already updating if just registered or manually triggered by user
+          this.serversStatusList.update(rptlConnectionFactory);
+        }
+      }
+    });
   }
 
   ngOnDestroy(): void {
     this.stateSub?.unsubscribe(); // Stops listening for RPTL state as application will be destroyed
     this.isRunningSub?.unsubscribe(); // Same thing for game session state
+    this.statusUpdateSub?.unsubscribe();
   }
 }
