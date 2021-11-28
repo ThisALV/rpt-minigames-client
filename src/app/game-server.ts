@@ -31,3 +31,24 @@ export class GameServer {
     }
   }
 }
+
+
+/**
+ * Converts a JSON array received from the Hub into a TypeScript exploitable `GameServer[]`.
+ *
+ * @param json JSON-formatted `GameServer` array
+ *
+ * @returns `GameServer[]` with, when available, updated status, usable with `ServersListService`
+ */
+export function serversFromJsonString(json: string): GameServer[] {
+  const result: GameServer[] = []; // We start with an empty servers list
+  const parsedServersArray = JSON.parse(json);
+
+  for (const server of parsedServersArray) {
+    // Constructs server object with data parsed from the JSON array, and adds it to the servers list
+    result.push(new GameServer(server.name, server.game, server.availability));
+    // If availability object wasn't retrieved, then it will be undefined and ctor will ignore it
+  }
+
+  return result;
+}
