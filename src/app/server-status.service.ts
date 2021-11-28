@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { RptlProtocolService, RptlState } from 'rpt-webapp-client';
 import { MonoTypeOperatorFunction, Observable, of, race, Subject, Subscription } from 'rxjs';
-import { Availability } from 'rpt-webapp-client/lib/availability';
+import { Availability } from 'rpt-webapp-client';
 import { first } from 'rxjs/operators';
 
 

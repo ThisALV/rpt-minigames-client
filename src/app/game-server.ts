@@ -1,4 +1,4 @@
-import { Availability } from 'rpt-webapp-client/lib/availability';
+import { Availability } from 'rpt-webapp-client';
 
 
 /**
