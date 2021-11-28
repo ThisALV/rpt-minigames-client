@@ -63,4 +63,65 @@ describe('serversFromJsonString', () => {
       new GameServer('Canaries #2', 'c', new Availability(0, 2)),
     );
   });
+
+  it('should ignore ill-formed availability JSON properties', () => {
+    // This is the JSON we are received from the hub
+    // Servers 1 and 4 have ill-formed status
+    const serversArray = `
+      [
+        {
+          "name": "Açores #1",
+          "game": "a",
+          "port": 35555,
+          "availability": {
+            "currentActors": "something",
+            "actorsLimit": 2
+          }
+        },
+        {
+          "name": "Açores #2",
+          "game": "a",
+          "port": 35556
+        },
+        {
+          "name": "Bermudes #1",
+          "game": "b",
+          "port": 35557,
+          "availability": {
+            "currentActors": 0,
+            "actorsLimit": 2
+          }
+        },
+        {
+          "name": "Bermudes #2",
+          "game": "b",
+          "port": 35558,
+          "availability": null
+        },
+        {
+          "name": "Canaries #1",
+          "game": "c",
+          "port": 35559
+        },
+        {
+          "name": "Canaries #2",
+          "game": "c",
+          "port": 35560
+        }
+     ]
+    `;
+
+    const result = serversFromJsonString(serversArray);
+
+    // We're expecting the result to contain all these servers in this precise order, with status ignored for servers 1 and 4
+    expectArrayToBeEqual(
+      result,
+      new GameServer('Açores #1', 'a'),
+      new GameServer('Açores #2', 'a'),
+      new GameServer('Bermudes #1', 'b', new Availability(0, 2)),
+      new GameServer('Bermudes #2', 'b'),
+      new GameServer('Canaries #1', 'c'),
+      new GameServer('Canaries #2', 'c'),
+    );
+  });
 });

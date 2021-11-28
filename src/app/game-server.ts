@@ -46,9 +46,12 @@ export function serversFromJsonString(json: string): GameServer[] {
 
   for (const server of parsedServersArray) {
     let availability: Availability | undefined;
-    // If availability property was received, then we assign it to the argument object
-    if (server.availability !== undefined) {
-      // Reading properties from the JSON object
+    // availability property must be a JSON object with matching Availability TS class properties
+    if (
+      typeof server.availability === 'object' && server.availability !== null &&
+      typeof server.availability.currentActors === 'number' &&
+      typeof server.availability.actorsLimit
+    ) { // If it matches, then we don't ignore this server status retrieved by the hub
       availability = new Availability(server.availability.currentActors, server.availability.actorsLimit);
     }
 
