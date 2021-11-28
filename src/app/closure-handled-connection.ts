@@ -15,7 +15,7 @@ const WS_CLOSE_NORMAL = 1000; // Used to identify if connection was closed from 
  * to run `RptlProtocolService`.
  */
 class CloseFrameObserver implements NextObserver<CloseEvent> {
-  public connection?: Subject<string>;
+  public connection?: Subject<any>;
 
   /**
    * Constructs observer without any `connection` to stop automatically at close frames.
@@ -45,7 +45,7 @@ class CloseFrameObserver implements NextObserver<CloseEvent> {
  * Overrides default `WebSocketSubject` by stopping given subject and reporting error WS close frames into the underlying
  * `RuntimeErrorServices`.
  */
-export class ClosureHandledWebsocketConfig implements WebSocketSubjectConfig<string> {
+export class ClosureHandledWebsocketConfig<T> implements WebSocketSubjectConfig<T> {
   closeObserver: CloseFrameObserver;
 
   /**

@@ -7,7 +7,7 @@ import { ClosureHandledWebsocketConfig } from './closure-handled-connection';
 /**
  * Overrides default `ClosureHandledWebsocketConfig` behavior by reading and writing raw textual data instead of JSON data.
  */
-class RptlWebsocketConfig extends ClosureHandledWebsocketConfig {
+class RptlWebsocketConfig extends ClosureHandledWebsocketConfig<string> {
   serializer: (value: string) => string; // Write plain text for RPTL protocol
   deserializer: (e: MessageEvent) => string; // Read plain text for RPTL protocol
 
