@@ -45,9 +45,15 @@ export function serversFromJsonString(json: string): GameServer[] {
   const parsedServersArray = JSON.parse(json);
 
   for (const server of parsedServersArray) {
+    let availability: Availability | undefined;
+    // If availability property was received, then we assign it to the argument object
+    if (server.availability !== undefined) {
+      // Reading properties from the JSON object
+      availability = new Availability(server.availability.currentActors, server.availability.actorsLimit);
+    }
+
     // Constructs server object with data parsed from the JSON array, and adds it to the servers list
-    result.push(new GameServer(server.name, server.game, server.availability));
-    // If availability object wasn't retrieved, then it will be undefined and ctor will ignore it
+    result.push(new GameServer(server.name, server.game, availability));
   }
 
   return result;
