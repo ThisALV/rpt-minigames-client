@@ -1,12 +1,7 @@
 import { Injectable } from '@angular/core';
-import { servers } from './servers.json';
-import { Availability } from 'rpt-webapp-client';
-import { MonoTypeOperatorFunction, Observable, Subject } from 'rxjs';
-import { GameServerResolutionService } from './game-server-resolution.service';
+import { Observable, Subject, Subscription } from 'rxjs';
 import { GameServer } from './game-server';
 import { RuntimeErrorsService } from './runtime-errors.service';
-import { delay, first } from 'rxjs/operators';
-import { ServerStatusService } from './server-status.service';
 
 
 /**
@@ -20,14 +15,7 @@ export class ServersListBusy extends Error {
 
 
 /**
- * Used by `ServersListService.update()` to create connection with each server in the list using its URL and runtime errors handler
- */
-export type ConnectionFactory = (currentServerUrl: string, errorsHandler: RuntimeErrorsService) => Subject<string>;
-
-
-/**
- * Connects and performs an RPTL checkout on each service listed inside `servers.json` file, then provides data for status response
- * from current HTTPS server.
+ * Connects to a hub server which sends to us JSON data about servers list and their state any time it is updated or any time we ask for it.
  *
  * @author ThisALV, https://github.com/ThisALV/
  */
@@ -35,78 +23,75 @@ export type ConnectionFactory = (currentServerUrl: string, errorsHandler: Runtim
   providedIn: 'root'
 })
 export class ServersListService {
-  private currentServer?: number; // Index of server which is currently waiting a status, if any
+  private updating: boolean;
+  private responseSubscription?: Subscription; // Assigned when update operation is running and we're waiting for JSON data
+
   private readonly serversStatus: Subject<GameServer[]>;
 
   /**
-   * Constructs a service which is not waiting for server status and without any retrieved status for now.
+   * Constructs a service which is not waiting for servers list status and without any retrieved status for now.
    *
-   * @param urlProvider Get WS URL for game servers using this service
-   * @param statusProvider Service to perform checkout operation on each service one-by-one
    * @param errorHandler Errors when trying to establish connection with the next game server
    */
-  constructor(
-    private readonly urlProvider: GameServerResolutionService,
-    private readonly statusProvider: ServerStatusService,
-    private readonly errorHandler: RuntimeErrorsService)
-  {
+  constructor(private readonly errorHandler: RuntimeErrorsService) {
+    this.updating = false;
     this.serversStatus = new Subject<GameServer[]>();
   }
 
-  // Called recursively and asynchronously while every server status hasn't been retrieved
-  private updateNext(connection: ConnectionFactory,
-                     delayPipeOperator: MonoTypeOperatorFunction<undefined>,
-                     updatedStatus: GameServer[] = []): void
-  {
-    // If every server status has been updated, marks update as done, pushes new status inside subject then stops async recursion
-    if (this.currentServer === servers.length) {
-      this.currentServer = undefined;
-      this.serversStatus.next(updatedStatus);
-    } else { // If there is another server status to update, sends CHECKOUT command and saves response inside array for recursion
-      const currentServerData = servers[(this.currentServer as number)++];
-      const currentServerUrl = this.urlProvider.resolve(currentServerData.port);
+  /**
+   * Sets `updating` flag to `false`, pushes given value into service subject if it is not `undefined` and stop listening for incoming
+   * response so we don't handle message for further operations.
+   */
+  private terminate(newServersList?: GameServer[]): void {
+    this.updating = false;
 
-      const context: ServersListService = this;
-      // The next checkout operation result will be pushed into recursively passed results array
-      this.statusProvider.getNextResponse().pipe(first()).subscribe({
-        next(status?: Availability): void {
-          // Makes recursive call to the next game server
-          context.updateNext(connection, delayPipeOperator, updatedStatus.concat(
-            new GameServer(currentServerData.name, currentServerData.game, status)
-          ));
-        }
-      });
-
-      // Performs checkout operation
-      this.statusProvider.checkout(connection(currentServerUrl, this.errorHandler), delayPipeOperator);
+    if (newServersList !== undefined) {
+      this.serversStatus.next(newServersList);
     }
+
+    this.responseSubscription?.unsubscribe();
+    this.responseSubscription = undefined;
   }
 
   /**
-   * @returns `true` if service is currently waiting for at least one server status, `false` otherwise
+   * @returns `true` if service has sent a `REQUEST` and is waiting for a JSON servers array response
    */
   isUpdating(): boolean {
-    return this.currentServer !== undefined; // No server index means nothing to update
+    return this.updating;
   }
 
   /**
-   * Sends a CHECKOUT command and listen for STATUS response for each listed serve, one by one, then publish new servers status array
-   * which can be obtained using `getListStatus()`.
+   * Sends a `REQUEST` message to hub connected with `connection`, and wait for its JSON game servers array response.
    *
-   * @param connection Stream required by underlying RPTL protocol to communicate with server
-   * @param delayPipeOperator When the `Observable<undefined>` returned by this operator next a new `undefined` value, a server checkout
-   * times out and the process go to the next server, considering current server as not working
+   * @param connection Stream required by underlying WSS protocol to communicate with hub
    *
    * @throws ServersListBusy if another update operation is still running but no new array has been passed to subject yet
    */
-  update(connection: ConnectionFactory, delayPipeOperator: MonoTypeOperatorFunction<undefined> = delay(500)): void {
-    if (this.isUpdating()) { // Can't handle 2 recursive updates at the same time
+  update(connection: Subject<GameServer[]>): void {
+    if (this.isUpdating()) { // Can't handle 2 updates at the same time
       throw new ServersListBusy();
     }
 
-    // Initializes servers status update
-    this.currentServer = 0; // Beginning with the first server to be listed
-    this.updateNext(connection, delayPipeOperator);
+    this.updating = true; // Now we're updating
+    connection.next([]); // Empty array to send REQUEST message to hub
+
+    const context: ServersListService = this;
+    this.responseSubscription = connection.subscribe({
+      next(serversList: GameServer[]): void {
+        // Terminates with the received and parsed result
+        context.terminate(serversList);
+      },
+      error(err: any): void {
+        // If any WebSocket usage error occurs on this connection, then it's useless to wait for response
+        context.errorHandler.throwError(err.message); // Logging the WebSocket error
+
+        context.terminate(); // Terminates with no valid result obtained from the hub
+      },
+      complete(): void {
+        // Connection closed, operation must terminate without result
+        context.terminate();
+      }
+    });
   }
 
   /**
