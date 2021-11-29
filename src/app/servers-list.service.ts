@@ -7,9 +7,13 @@ import { RuntimeErrorsService } from './runtime-errors.service';
 /**
  * Thrown by `update()` method if an other call has been performed but there is still at least one server status to retrieve.
  */
-export class ServersListBusy extends Error {
-  constructor() {
-    super('Already updating servers list');
+export class InvalidListeningState extends Error {
+  /**
+   * @param shouldListen Set this to `true` if the `ServersListService` was supposed to be listening for this operation to work, `false`
+   * otherwise
+   */
+  constructor(shouldListen: boolean) {
+    super((shouldListen ? 'Service should be listening' : 'Service should not be listening') + ' for this operation');
   }
 }
 
@@ -23,8 +27,9 @@ export class ServersListBusy extends Error {
   providedIn: 'root'
 })
 export class ServersListService {
-  private updating: boolean;
-  private responseSubscription?: Subscription; // Assigned when update operation is running and we're waiting for JSON data
+  // Assigned when listen operation is running and we're waiting for JSON data
+  private hubConnection?: Subject<GameServer[]>; // Used to listen incoming messages or WSS events and to send request message
+  private responseSubscription?: Subscription; // Used to stop listen operation
 
   private readonly serversStatus: Subject<GameServer[]>;
 
@@ -34,64 +39,77 @@ export class ServersListService {
    * @param errorHandler Errors when trying to establish connection with the next game server
    */
   constructor(private readonly errorHandler: RuntimeErrorsService) {
-    this.updating = false;
     this.serversStatus = new Subject<GameServer[]>();
   }
 
   /**
-   * Sets `updating` flag to `false`, pushes given value into service subject if it is not `undefined` and stop listening for incoming
-   * response so we don't handle message for further operations.
+   * @returns `true` if service is observing JSON data from the hub with the provided connection
    */
-  private terminate(newServersList?: GameServer[]): void {
-    this.updating = false;
+  isListening(): boolean {
+    return this.responseSubscription !== undefined; // A subscription to a WSS stream means we're listening it
+  }
 
-    if (newServersList !== undefined) {
-      this.serversStatus.next(newServersList);
+  /**
+   * Waits for JSON servers array to be received from the hub using the given WSS connection. When it starts listening hub, a checkout
+   * request message is sent to ensure it initializes the servers list for the 1st time.
+   *
+   * @param connection Stream required by underlying WSS protocol to communicate with hub
+   *
+   * @throws InvalidListeningState if we're already listening for new servers list
+   */
+  listen(connection: Subject<GameServer[]>): void {
+    if (this.isListening()) { // Can't handle 2 subscriptions at the same time
+      throw new InvalidListeningState(false);
     }
 
+    const context: ServersListService = this;
+    this.responseSubscription = connection.subscribe({
+      next(serversList: GameServer[]): void {
+        // Each new data received and parsed is published to the service subject
+        context.serversStatus.next(serversList);
+      },
+      error(err: any): void {
+        // If any WebSocket usage error occurs on this connection, then it's useless to wait for response
+        context.errorHandler.throwError(err.message); // Logging the WebSocket error
+        context.stopListening();
+      },
+      complete(): void {
+        // Connection closed, operation must terminate without result
+        context.stopListening();
+      }
+    });
+
+    this.hubConnection = connection; // Stores connection, will use it to send request message later
+    this.requestUpdate(); // So we don't need a server update to get a servers list at the beginning
+  }
+
+  /**
+   * Stops listening for JSON data from the current connection with hub.
+   *
+   * @throws InvalidListeningState if we weren't listening for new servers list
+   */
+  stopListening(): void {
+    if (!this.isListening()) { // Ensure this method is only called if we're listening to something
+      throw new InvalidListeningState(true);
+    }
+
+    // No longer observing servers list, remove subscription to signal we're no longer listening
+    this.hubConnection = undefined;
     this.responseSubscription?.unsubscribe();
     this.responseSubscription = undefined;
   }
 
   /**
-   * @returns `true` if service has sent a `REQUEST` and is waiting for a JSON servers array response
-   */
-  isUpdating(): boolean {
-    return this.updating;
-  }
-
-  /**
-   * Sends a `REQUEST` message to hub connected with `connection`, and wait for its JSON game servers array response.
+   * Sends a request message to receive an updated servers list right now.
    *
-   * @param connection Stream required by underlying WSS protocol to communicate with hub
-   *
-   * @throws ServersListBusy if another update operation is still running but no new array has been passed to subject yet
+   * @throws InvalidListeningState if we're not connected and listening to a hub right now
    */
-  update(connection: Subject<GameServer[]>): void {
-    if (this.isUpdating()) { // Can't handle 2 updates at the same time
-      throw new ServersListBusy();
+  requestUpdate(): void {
+    if (!this.isListening()) { // Cannot update if no hub can provide data
+      throw new InvalidListeningState(true);
     }
 
-    this.updating = true; // Now we're updating
-    connection.next([]); // Empty array to send REQUEST message to hub
-
-    const context: ServersListService = this;
-    this.responseSubscription = connection.subscribe({
-      next(serversList: GameServer[]): void {
-        // Terminates with the received and parsed result
-        context.terminate(serversList);
-      },
-      error(err: any): void {
-        // If any WebSocket usage error occurs on this connection, then it's useless to wait for response
-        context.errorHandler.throwError(err.message); // Logging the WebSocket error
-
-        context.terminate(); // Terminates with no valid result obtained from the hub
-      },
-      complete(): void {
-        // Connection closed, operation must terminate without result
-        context.terminate();
-      }
-    });
+    this.hubConnection?.next([]); // Empty array to send REQUEST message using hub connection serializer
   }
 
   /**

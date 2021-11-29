@@ -1,15 +1,20 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { GameServer } from '../game-server';
 import { ServersListService } from '../servers-list.service';
 import { RuntimeErrorsService } from '../runtime-errors.service';
-import { rptlConnectionFactory, SHARED_CONNECTION_FACTORY } from '../game-server-connection';
+import { SHARED_CONNECTION_FACTORY } from '../game-server-connection';
 import { servers } from '../servers.json';
 import { GameServerResolutionService } from '../game-server-resolution.service';
 import { RptlProtocolService, RptlState } from 'rpt-webapp-client';
 import { first } from 'rxjs/operators';
 import { MinigameService } from '../minigame.service';
 import { MinigameType } from '../minigame-enums';
+import { SHARED_HUB_CONNECTION_FACTORY } from '../hub-connection';
+
+
+// Port to connect on remote server
+const HUB_SERVER_PORT = 35554;
 
 
 /**
@@ -41,6 +46,7 @@ export class ServersListComponent implements OnInit, OnDestroy {
   private readonly serverPorts: { [serverName: string]: number }; // Registry of port for each known game server
   private readonly serverMinigameTypes: { [serverName: string]: string }; // Registry of RpT Minigame type for each known game server
 
+  private hubConnection?: Subject<GameServer[]>;
   private serversStatusSubscription?: Subscription; // When uninitialized, no longer wait for requested game servers status
   private sessionEndSubscription?: Subscription; // When uninitialized, doesn't wait for previously selected session to end
 
@@ -90,11 +96,26 @@ export class ServersListComponent implements OnInit, OnDestroy {
     this.minigameService.playOn(parsedMinigameType); // Configures Minigame service to run on selected minigame server game type
   }
 
+  /// Establishes a connection with the game servers hub and listen for servers list updates
+  private connectWithHub(): void {
+    // Connects to hub
+    this.hubConnection = SHARED_HUB_CONNECTION_FACTORY.hubConnectionFor(
+      this.urlsProvider.resolve(HUB_SERVER_PORT), this.mainAppErrorsHandler
+    );
+    // Listen updates from the hub
+    this.serversStatusProvider.listen(this.hubConnection);
+  }
+
   /**
-   * Request to update game servers status.
+   * Requests to update game servers status right now, creating connection if it was closed earlier.
    */
   checkout(): void {
-    this.serversStatusProvider.update(rptlConnectionFactory); // Updates using WebSocket connection
+    if (!this.serversStatusProvider.isListening()) {
+      // Manual update request will be done by the service as we start a new listen operation
+      this.connectWithHub();
+    } else { // Otherwise, ask for it to be sent from here
+      this.serversStatusProvider.requestUpdate();
+    }
   }
 
   /**
@@ -122,7 +143,7 @@ export class ServersListComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Initializes then update array with checkout() method response from ServersList service.
+   * Establishes connection with hub, wait for servers list to be updated and send checkout request to get servers list for the 1st time.
    */
   ngOnInit(): void {
     // Saves subscription to stop it when component is destroyed
@@ -130,15 +151,17 @@ export class ServersListComponent implements OnInit, OnDestroy {
       next: (updatedServersStatus: GameServer[]) => this.serversStatus = updatedServersStatus
     });
 
-    // Updates a first time to retrieve at servers list at least one time
-    this.checkout();
+    this.connectWithHub();
   }
 
   /**
-   * Stops to listen for servers status updates.
+   * Stops to listen for servers status updates and disconnect from hub.
    */
   ngOnDestroy(): void {
     this.serversStatusSubscription?.unsubscribe();
     this.sessionEndSubscription?.unsubscribe();
+
+    // Closes WSS connection with hub normally
+    this.hubConnection?.complete();
   }
 }

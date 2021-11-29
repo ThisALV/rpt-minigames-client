@@ -1,11 +1,8 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { LoginService } from './login.service';
-import { interval, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { RptlProtocolService, RptlState } from 'rpt-webapp-client';
 import { MinigameService } from './minigame.service';
-import { ServersListService } from './servers-list.service';
-import { rptlConnectionFactory } from './game-server-connection';
-import { delay } from 'rxjs/operators';
 
 
 /**
@@ -36,8 +33,7 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     private readonly rptlProtocol: RptlProtocolService,
     private readonly gameStateProvider: MinigameService,
-    private readonly loginData: LoginService,
-    private readonly serversStatusList: ServersListService
+    private readonly loginData: LoginService
   ) {
     this.insideRoom = false;
     this.insideGame = false;
@@ -55,16 +51,9 @@ export class AppComponent implements OnInit, OnDestroy {
           case RptlState.UNREGISTERED: // When connected, begins registration
             // CHECKOUT connection will not be caught as their running on CheckoutRptlProtocolService
             this.rptlProtocol.register(this.loginData.generateUid(), this.loginData.name); // Uses logins data to register
-
             break;
           case RptlState.REGISTERED: // Registered inside server, can show room with other actors
             this.insideRoom = true;
-
-            // As client has joined and registered, a server status has been changed and must be updated again
-            if (!this.serversStatusList.isUpdating()) { // Might already be updating list
-              this.serversStatusList.update(rptlConnectionFactory, delay(500));
-            }
-
             break;
           case RptlState.DISCONNECTED: // No longer inside server, dismisses lobby room
             this.insideRoom = false;
@@ -76,15 +65,6 @@ export class AppComponent implements OnInit, OnDestroy {
     // When game session has started, hides lobby and displays game board
     this.isRunningSub = this.gameStateProvider.isRunning().subscribe({
       next: (playing: boolean) => this.insideGame = playing
-    });
-
-    // Every 5s, automatically updates servers status list if is not already updating
-    this.statusUpdateSub = interval(5000).subscribe({
-      next: () => {
-        if (!this.serversStatusList.isUpdating()) { // Might be already updating if just registered or manually triggered by user
-          this.serversStatusList.update(rptlConnectionFactory);
-        }
-      }
     });
   }
 
