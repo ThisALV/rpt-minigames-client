@@ -110,53 +110,6 @@ export const DEFAULT_MOCKED_SERVERS: GameServer[] = [
 
 
 /**
- * Mocks ServersListService to always provides a predetermined GameServer array into getListStatus() when update() is called.
- */
-export class MockedServersListProvider {
-  /**
-   * Must be reset for each instance as its content could be modified for testing purposes.
-   */
-  readonly providedServers: GameServer[];
-  /**
-   * Mocks provider isUpdating() returned value.
-   */
-  updating: boolean;
-
-  private readonly serversList: Subject<GameServer[]>;
-
-  /**
-   * Initializes `providesServers` with `SERVERS` default array.
-   */
-  constructor() {
-    this.providedServers = DEFAULT_MOCKED_SERVERS;
-    this.updating = false;
-    this.serversList = new Subject<GameServer[]>();
-  }
-
-  /**
-   * @returns An Observable emitting `providedServers` when `update()` is called
-   */
-  getListStatus(): Observable<GameServer[]> {
-    return this.serversList;
-  }
-
-  /**
-   * Provides `providedServers` to `getListStatus()`.
-   */
-  update(): void {
-    this.serversList.next(this.providedServers);
-  }
-
-  /**
-   * @returns `updating` field
-   */
-  isUpdating(): boolean {
-    return this.updating;
-  }
-}
-
-
-/**
  * Get an operator which blocks values from source until a value is passed to the `trigger` Subject. If a value is emitted by source
  * after trigger, then that value will be immediately passed to returned (or delayed) Observable.
  *
