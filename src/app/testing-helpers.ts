@@ -44,13 +44,13 @@ export function expectArrayToContainAllOff<T>(arr: T[], ...elems: T[]): void {
 
 /**
  * Mocks any subject which is using next() method to send a message and next() callback to receive a message (for example, a
- * `WebSocketSubject<string>`)
+ * `WebSocketSubject<T>`)
  */
-export class MockedMessagingSubject extends Subject<string> {
+export class GenericMockedMessagingSubject<T> extends Subject<T> {
   /**
    * Every `next()` method arguments stored here.
    */
-  sentMessagesQueue: string[];
+  sentMessagesQueue: T[];
 
   /**
    * Constructs subject with no sent messages.
@@ -77,17 +77,23 @@ export class MockedMessagingSubject extends Subject<string> {
   /**
    * @param message Will be pushed into `sentMessagesQueue`, must *NOT* be `undefined`
    */
-  next(message?: string): void {
-    this.sentMessagesQueue.push(message as string);
+  next(message?: T): void {
+    this.sentMessagesQueue.push(message as T);
   }
 
   /**
    * @param message `next()` observers callback will be called using that value
    */
-  receive(message: string): void {
+  receive(message: T): void {
     super.next(message);
   }
 }
+
+
+/**
+ * Specialization for `GenericMockedMessagingSubject` for textual messages like RPTL protocols.
+ */
+export class MockedMessagingSubject extends GenericMockedMessagingSubject<string> {}
 
 
 /**

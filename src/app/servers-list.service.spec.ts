@@ -1,171 +1,143 @@
 import { TestBed } from '@angular/core/testing';
-import { ConnectionFactory, ServersListBusy, ServersListService } from './servers-list.service';
-import { Observable, Subject } from 'rxjs';
-import { GameServerResolutionService } from './game-server-resolution.service';
-import { expectArrayToBeEqual, mockedDelay, MockedMessagingSubject, unexpected } from './testing-helpers';
+import { InvalidListeningState, ServersListService } from './servers-list.service';
+import { expectArrayToBeEqual, GenericMockedMessagingSubject, unexpected } from './testing-helpers';
 import { GameServer } from './game-server';
 import { Availability } from 'rpt-webapp-client';
-import { CheckoutResponse, ServerStatusService } from './server-status.service';
-
-
-/**
- * Mocks `ServerStatusService` to make `getNextResponse()` providing status assigned to the next element inside `operationResults` queue
- * when `checkout()` is called.
- *
- * It can be stopped using the `stopped` field, if so `checkout()` will no longer passes new value.
- */
-class MockedServerStatusProvider {
-  readonly operationResults: CheckoutResponse[];
-  stopped: boolean;
-
-  private readonly currentOperationResult: Subject<CheckoutResponse>;
-  private currentResult: number;
-
-  constructor() {
-    this.operationResults = [ // Default results mock configuration used for unit testing
-      new Availability(0, 2),
-      undefined,
-      undefined,
-      new Availability(2, 2),
-      new Availability(1, 2),
-      undefined
-    ];
-
-    this.currentResult = 0; // Begins from the first configured and mocked checkout result
-    this.stopped = false;
-    this.currentOperationResult = new Subject<CheckoutResponse>();
-  }
-
-  /// Retrieves configured results when `checkout()` is called.
-  getNextResponse(): Observable<CheckoutResponse> {
-    return this.currentOperationResult;
-  }
-
-  /// Pushes next configured result inside queue into retrieved subject, if and only if this service isn't stopped
-  checkout(): void {
-    if (!this.stopped) {
-      this.currentOperationResult.next(this.operationResults[this.currentResult++]);
-    }
-  }
-}
-
-
-/**
- * @param serverUrls Every connection inside `connections` will saves URL of mocked server into this array at the same index of current
- * mocked connection
- * @param connections Queue of subjects returned, the next subject will be provided to for connection to the next server inside service
- * servers list
- */
-function mockedConnectionFactory(serverUrls: string[], connections: MockedMessagingSubject[]): ConnectionFactory {
-  let currentConnection = 0;
-
-  return (currentServerUrl: string): Subject<string> => {
-    // Keep a trace of every server which the subject connects to
-    serverUrls[currentConnection] = currentServerUrl;
-    // Provides current mocked connection subject
-    const providedMock = connections[currentConnection];
-
-    // Go for the next subject to provide for connection mocking. RptlProtocolService requires different subjects so mocking with only
-    // one subject doesn't work
-    currentConnection++;
-
-    return providedMock;
-  };
-}
-
-
-/**
- * @param count Required number of default constructed `MockedMessagingSubject`
- *
- * @returns An array containing `count` default constructed `MockedMessagingSubject`
- */
-function mockedConnections(count: number): MockedMessagingSubject[] {
-  const connections: MockedMessagingSubject[] = [];
-
-  // Because subject must be a different instance, we cannot use fill()
-  for (let i = 0; i < count; i++) {
-    connections.push(new MockedMessagingSubject());
-  }
-
-  return connections;
-}
+import { RuntimeError, RuntimeErrorsService } from './runtime-errors.service';
 
 
 describe('ServersListService', () => {
   let service: ServersListService;
-  let statusProvider: MockedServerStatusProvider; // Used to block the updating process to launch concurrent updates for the last unit test
+  let errorHandlers: RuntimeErrorsService;
+
+  // Mocked connection with hub which retrieves us parsed JSON game servers array
+  let mockedHubConnection: GenericMockedMessagingSubject<GameServer[]>;
 
   beforeEach(() => {
-    statusProvider = new MockedServerStatusProvider(); // Instance must be directly accessible to use the stopped field
-
-    TestBed.configureTestingModule({
-      providers: [
-        {
-          provide: GameServerResolutionService,
-          useValue: {
-            // Window not available for testing: emulates case where protocol is https and hostname is localhost
-            resolve: (port: number): string => `wss://localhost:${port}/`
-          }
-        },
-        { // We can custom individuals servers result
-          provide: ServerStatusService,
-          useValue: statusProvider
-        }
-      ]
-    });
+    mockedHubConnection = new GenericMockedMessagingSubject<GameServer[]>(); // Uses a new connection
 
     service = TestBed.inject(ServersListService);
+    // Get RuntimeErrors dependency service to check for reported errors
+    errorHandlers = TestBed.inject(RuntimeErrorsService);
   });
 
-  it('should be created', () => {
-    expect(service).toBeTruthy();
+  it('should be created with no hub listened', () => {
+    expect(service).toBeTruthy(); // Checks for service instantiation
+    expect(service.isListening()).toBeFalse(); // Checks for listen operation state
   });
 
-  it('should checkout every server recursively then update status list', () => {
-    const serverUrls: string[] = new Array<string>(6); // URL for each mocked connection will be saved here
-    const connections = mockedConnections(6); // Will allow to 6 different mocked connections and saves connected with URL into array
-    const delayTrigger = new Subject<undefined>(); // Call next() to time out delay for current server
+  describe('listen()', () => {
+    it('should send REQUEST and wait for parsed JSON data to be received', () => {
+      const receivedLists: GameServer[][] = []; // Uses to record every value emitted by servers list subject
+      service.getListStatus().subscribe({
+        next: (serversList: GameServer[]) => receivedLists.push(serversList),
+        error: unexpected, // No WS error expected
+        complete: unexpected // No connection closure expected
+      });
 
-    let receivedServersStatus: GameServer[] | undefined;
-    service.getListStatus().subscribe({ // Allow to check for status retrieved by servers once service update is done
-      next: (serversStatus: GameServer[]) => receivedServersStatus = serversStatus,
-      error: unexpected,
-      complete: unexpected
+      service.listen(mockedHubConnection);
+      expect(service.isListening()).toBeTrue();
+
+      // We're expecting exactly one empty servers list to have been pushed inside the subject, so the
+      // subject will send REQUEST to the hub
+      expectArrayToBeEqual(mockedHubConnection.sentMessagesQueue, []);
+
+      // We simulated that hub sends to us, one by one, each of these updated server lists
+      const updatedServerLists: GameServer[][] = [
+        [
+          new GameServer('Açores', 'a', new Availability(0, 2))
+        ], [
+          new GameServer('Açores', 'a', new Availability(1, 2)),
+          new GameServer('Bermudes', 'b')
+        ],
+        []
+      ];
+
+      // Hub send to us the lists
+      for (const newList of updatedServerLists) {
+        mockedHubConnection.receive(newList);
+      }
+
+      // We're expecting them to have been passed through getListStatus() subject
+      expectArrayToBeEqual(receivedLists, ...updatedServerLists);
     });
 
-    service.update(mockedConnectionFactory(serverUrls, connections), mockedDelay(delayTrigger));
+    it('should stop listen and report if an error occurs on stream', () => {
+      // Nothing should be passed to the server lists stream if an error occurs on connection
+      service.getListStatus().subscribe({
+        next: unexpected,
+        error: unexpected,
+        complete: unexpected
+      });
 
-    // Checks for all game server to have been resolved using the appropriate port in the right order
-    // Comparing with the list of expected connected URLs:
-    expectArrayToBeEqual(serverUrls,
-      'wss://localhost:35555/',
-      'wss://localhost:35556/',
-      'wss://localhost:35557/',
-      'wss://localhost:35558/',
-      'wss://localhost:35559/',
-      'wss://localhost:35560/'
-    );
+      // We just expect our error handler to catch errors reported from the stream
+      errorHandlers.observe().subscribe({
+        next(err: RuntimeError): void {
+          // We expect this error to keep trace of the error reason
+          expect(err.message).toEqual('A random error on connection');
+        }
+      });
 
-    expect(receivedServersStatus).toBeDefined();
-    // 3 of 6 servers status fully retrieved expected, Açores #2, Bermudes #1 and Canaries #2 are incomplete because of a
-    // timeout, connection and checkout errors respectively
-    expectArrayToBeEqual(receivedServersStatus as GameServer[],
-      new GameServer('Açores #1', 'a', new Availability(0, 2)),
-      new GameServer('Açores #2', 'a'),
-      new GameServer('Bermudes #1', 'b'),
-      new GameServer('Bermudes #2', 'b', new Availability(2, 2)),
-      new GameServer('Canaries #1', 'c', new Availability(1, 2)),
-      new GameServer('Canaries #2', 'c'),
-    );
+      service.listen(mockedHubConnection);
+      mockedHubConnection.error({message: 'A random error on connection' });
+      expect(service.isListening()).toBeFalse(); // We should ne longer listen as stream is crashed
+    });
+
+    it('should stop listen when connection is closed', () => {
+      // Nothing should be passed to the server lists stream if connection is closed
+      service.getListStatus().subscribe({
+        next: unexpected,
+        error: unexpected,
+        complete: unexpected
+      });
+
+      service.listen(mockedHubConnection);
+      mockedHubConnection.complete(); // Triggers observers complete() callback...
+      expect(service.isListening()).toBeFalse(); // ...which should stop listen operation
+    });
+
+    it('should throw if another listen operation is still running', () => {
+      service.listen(mockedHubConnection);
+      expect(() => service.listen(mockedHubConnection)).toThrowError(InvalidListeningState);
+    });
   });
 
-  it('should not be able to update concurrently', () => {
-    // Stops it so update doesn't finish immediately and we can start a concurrent update which should fail
-    statusProvider.stopped = true;
-    // Starts a 1st update, params doesn't matter we just test if it is not possible to call it twice
-    service.update(mockedConnectionFactory(new Array<string>(6), mockedConnections(6)));
-    // Try a concurrent update while the other one is certainly still waiting for a server response
-    expect(() => service.update(mockedConnectionFactory(new Array<string>(6), mockedConnections(6))))
-      .toThrowError(ServersListBusy);
+  describe('stopListening()', () => {
+    it('should no longer be listening and no longer react to new lists on stream', () => {
+      service.listen(mockedHubConnection); // Starts listen operation
+      service.stopListening();
+
+      expect(service.isListening()).toBeFalse(); // Should detect we're no longer on listening state
+
+      // We expect that new values on stream will not be passed through this service as it is no longer listening
+      service.getListStatus().subscribe({
+        next: unexpected,
+        error: unexpected,
+        complete: unexpected
+      });
+
+      // New list received from hub even if service doesn't listen
+      mockedHubConnection.receive([new GameServer('Nothing', 'a')]);
+    });
+
+    it('should throw if no listen operation is running', () => {
+      expect(() => service.stopListening()).toThrowError(InvalidListeningState);
+    });
+  });
+
+  describe('requestState()', () => {
+    it('should send an empty list into the stream', () => {
+      service.listen(mockedHubConnection);
+      // Ignores the request sent first by the listen() method
+      mockedHubConnection.clear();
+
+      service.requestUpdate();
+      // We expect exactly one empty list to have been sent
+      expectArrayToBeEqual(mockedHubConnection.sentMessagesQueue, []);
+    });
+
+    it('should throw if no listen operation is running', () => {
+      expect(() => service.requestUpdate()).toThrowError(InvalidListeningState);
+    });
   });
 });
