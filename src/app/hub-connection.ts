@@ -1,9 +1,10 @@
 import { ClosureHandledWebsocketConfig } from './closure-handled-connection';
 import { RuntimeErrorsService } from './runtime-errors.service';
-import { GameServer, serversFromJsonString } from './game-server';
+import { GameServer } from './game-server';
 import { WebSocketMessage } from 'rxjs/internal/observable/dom/WebSocketSubject';
 import { Subject } from 'rxjs';
 import { webSocket, WebSocketSubject } from 'rxjs/internal-compatibility';
+import { Availability } from 'rpt-webapp-client';
 
 
 // Message used to checkout servers list on the hub
@@ -11,26 +12,58 @@ const CHECKOUT_MESSAGE = 'REQUEST';
 
 
 /**
- * Overrides default `ClosureHandledWebsocketConfig` to write "REQUEST" and read `GameServer` JSON-formatted.
+ * Converts a JSON array received from the Hub into a TypeScript exploitable `GameServer[]`.
+ *
+ * @param json JSON-formatted `GameServer` array
+ *
+ * @returns `GameServer[]` with, when available, updated status, usable with `ServersListService`
  */
-class HubWebsocketConfig extends ClosureHandledWebsocketConfig<GameServer[]> {
-  constructor(url: string, errorsService: RuntimeErrorsService) {
-    super(url, errorsService);
-  }
+function serversFromJsonString(json: string): GameServer[] {
+  const result: GameServer[] = []; // We start with an empty servers list
+  const parsedServersArray = JSON.parse(json);
 
-  // Expects an empty list, will sends REQUEST to Hub no matter the value inside arguments
-  serializer(value: GameServer[]): WebSocketMessage {
-    // Even if the value doesn't matter, it might be a misunderstanding if this class if a non-empty list is passed
-    if (value.length !== 0) {
-      console.warn('Arg triggering REQUEST to hub is a non-empty list');
+  for (const server of parsedServersArray) {
+    let availability: Availability | undefined;
+    // availability property must be a JSON object with matching Availability TS class properties
+    if (
+      typeof server.availability === 'object' && server.availability !== null &&
+      typeof server.availability.currentActors === 'number' &&
+      typeof server.availability.actorsLimit
+    ) { // If it matches, then we don't ignore this server status retrieved by the hub
+      availability = new Availability(server.availability.currentActors, server.availability.actorsLimit);
     }
 
-    return CHECKOUT_MESSAGE;
+    // Constructs server object with data parsed from the JSON array, and adds it to the servers list
+    result.push(new GameServer(server.name, server.game, availability));
   }
 
-  // Parses JSON data from the WS message into a GameServer list
-  deserializer(e: MessageEvent): GameServer[] {
-    return serversFromJsonString(e.data);
+  return result;
+}
+
+
+/**
+ * Overrides default `ClosureHandledWebsocketConfig` to write "REQUEST" and read `GameServer` JSON-formatted list.
+ *
+ * *Please note this class is exported for testing purpose only, you should not use it directly inside your code.*
+ */
+export class HubWebsocketConfig extends ClosureHandledWebsocketConfig<GameServer[]> {
+  serializer: (value: GameServer[]) => WebSocketMessage;
+  deserializer: (e: MessageEvent) => GameServer[];
+
+  constructor(url: string, errorsService: RuntimeErrorsService) {
+    super(url, errorsService);
+
+    this.serializer = (value: GameServer[]): WebSocketMessage => {
+      // Even if the value doesn't matter, it might be a misunderstanding if this class if a non-empty list is passed
+      if (value.length !== 0) {
+        console.warn('Arg triggering REQUEST to hub is a non-empty list');
+      }
+
+      console.log('Sends : ' + CHECKOUT_MESSAGE);
+      return CHECKOUT_MESSAGE;
+    };
+
+    this.deserializer = (e: MessageEvent): GameServer[] => serversFromJsonString(e.data);
   }
 }
 

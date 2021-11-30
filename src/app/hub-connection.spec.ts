@@ -1,13 +1,43 @@
-import { GameServer, serversFromJsonString } from './game-server';
+import { GameServer} from './game-server';
 import { expectArrayToBeEqual } from './testing-helpers';
 import { Availability } from 'rpt-webapp-client';
+import { HubWebsocketConfig } from './hub-connection';
+import { TestBed } from '@angular/core/testing';
+import { RuntimeErrorsService } from './runtime-errors.service';
 
 
-describe('serversFromJsonString', () => {
-  it('should convert JSON game servers array into a GameServer List', () => {
-    // This is the JSON we are received from the hub
-    // Servers 2 and 6 have their status retrieved
-    const serversArray = `
+describe('HubWebsocketConfig', () => {
+  // Config object which defines serialize/deserialize operations
+  let config: HubWebsocketConfig;
+
+  // For each test, initializes the config object using the hub URL and the project global error handler from the injectables system
+  beforeEach(() => config = new HubWebsocketConfig('wss://localhost:35554/', TestBed.inject(RuntimeErrorsService)));
+
+  describe('serializer', () => {
+    it('should serializes every list into REQUEST message, but log a warn when it is not empty', () => {
+      const warnLogging = spyOn(console, 'warn'); // Spies calls for console.warn() to check if non empty list trigger it
+
+      expect(config.serializer([])).toEqual('REQUEST');
+      expect(warnLogging.calls.count()).toEqual(0); // Empty list, no warning
+
+      expect(config.serializer([
+        new GameServer('Açores', 'a')
+      ])).toEqual('REQUEST');
+      expect(warnLogging.calls.count()).toEqual(1); // Non empty list, one more warning
+
+      expect(config.serializer([
+        new GameServer('Açores', 'a'),
+        new GameServer('Bermudes', 'b', new Availability(1, 2))
+      ])).toEqual('REQUEST');
+      expect(warnLogging.calls.count()).toEqual(2); // Non empty list, one more warning
+    });
+  });
+
+  describe('deserializer', () => {
+    it('should convert JSON game servers array into a GameServer List', () => {
+      // This is the JSON we are received from the hub
+      // Servers 2 and 6 have their status retrieved
+      const serversArray = `
       [
         {
           "name": "Açores #1",
@@ -50,24 +80,24 @@ describe('serversFromJsonString', () => {
      ]
     `;
 
-    const result = serversFromJsonString(serversArray);
+      const result = config.deserializer({data: serversArray} as MessageEvent); // We're sure only data field will be used by deserializer
 
-    // We're expecting the result to contain all these servers in this precise order
-    expectArrayToBeEqual(
-      result,
-      new GameServer('Açores #1', 'a'),
-      new GameServer('Açores #2', 'a', new Availability(1, 2)),
-      new GameServer('Bermudes #1', 'b'),
-      new GameServer('Bermudes #2', 'b'),
-      new GameServer('Canaries #1', 'c'),
-      new GameServer('Canaries #2', 'c', new Availability(0, 2)),
-    );
-  });
+      // We're expecting the result to contain all these servers in this precise order
+      expectArrayToBeEqual(
+        result,
+        new GameServer('Açores #1', 'a'),
+        new GameServer('Açores #2', 'a', new Availability(1, 2)),
+        new GameServer('Bermudes #1', 'b'),
+        new GameServer('Bermudes #2', 'b'),
+        new GameServer('Canaries #1', 'c'),
+        new GameServer('Canaries #2', 'c', new Availability(0, 2)),
+      );
+    });
 
-  it('should ignore ill-formed availability JSON properties', () => {
-    // This is the JSON we are received from the hub
-    // Servers 1 and 4 have ill-formed status
-    const serversArray = `
+    it('should ignore ill-formed availability JSON properties', () => {
+      // This is the JSON we are received from the hub
+      // Servers 1 and 4 have ill-formed status
+      const serversArray = `
       [
         {
           "name": "Açores #1",
@@ -111,17 +141,18 @@ describe('serversFromJsonString', () => {
      ]
     `;
 
-    const result = serversFromJsonString(serversArray);
+      const result = config.deserializer({data: serversArray} as MessageEvent); // We're sure only data field will be used by deserializer
 
-    // We're expecting the result to contain all these servers in this precise order, with status ignored for servers 1 and 4
-    expectArrayToBeEqual(
-      result,
-      new GameServer('Açores #1', 'a'),
-      new GameServer('Açores #2', 'a'),
-      new GameServer('Bermudes #1', 'b', new Availability(0, 2)),
-      new GameServer('Bermudes #2', 'b'),
-      new GameServer('Canaries #1', 'c'),
-      new GameServer('Canaries #2', 'c'),
-    );
+      // We're expecting the result to contain all these servers in this precise order, with status ignored for servers 1 and 4
+      expectArrayToBeEqual(
+        result,
+        new GameServer('Açores #1', 'a'),
+        new GameServer('Açores #2', 'a'),
+        new GameServer('Bermudes #1', 'b', new Availability(0, 2)),
+        new GameServer('Bermudes #2', 'b'),
+        new GameServer('Canaries #1', 'c'),
+        new GameServer('Canaries #2', 'c'),
+      );
+    });
   });
 });
