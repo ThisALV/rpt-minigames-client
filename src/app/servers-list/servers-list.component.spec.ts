@@ -3,18 +3,12 @@ import { ServersListComponent } from './servers-list.component';
 import { GameServer } from '../game-server';
 import { Subject } from 'rxjs';
 import { Availability, RptlProtocolService, RptlState } from 'rpt-webapp-client';
-import { ServersListService } from '../servers-list.service';
 import { SHARED_CONNECTION_FACTORY } from '../game-server-connection';
-import {
-  DEFAULT_MOCKED_SERVERS,
-  expectArrayToBeEqual,
-  MockedMessagingSubject,
-  MockedServersListProvider,
-  unexpected
-} from '../testing-helpers';
+import { expectArrayToBeEqual, GenericMockedMessagingSubject, MockedMessagingSubject, unexpected } from '../testing-helpers';
 import { GameServerResolutionService } from '../game-server-resolution.service';
 import { MinigameService } from '../minigame.service';
 import { MinigameType } from '../minigame-enums';
+import { SHARED_HUB_CONNECTION_FACTORY } from '../hub-connection';
 
 
 /// `MockedMessagingSubject` expect that `complete()` does nothing until and `actuallyComplete()` calls `super.complete()`.
@@ -37,7 +31,6 @@ class DeferredCompletionConnection extends MockedMessagingSubject {
 
 
 describe('ServersListComponent', () => {
-  let mockedServersListService: MockedServersListProvider; // Used to control data provided to the component
   let rptlProtocol: RptlProtocolService; // Used to check for connection to have been done and for session to have begun successfully
   let minigame: MinigameService; // Used to check for current RpT Minigame if it matches with selected game server
   let component: ServersListComponent;
@@ -47,14 +40,17 @@ describe('ServersListComponent', () => {
   let secondConnection: DeferredCompletionConnection; // Mocked connection used if the first one has already been used and stopped
   let latestConnectedUrl: string | undefined; // Last URL argument gave to spied rptlConnectionFor()
 
+  let hubConnectionStream: GenericMockedMessagingSubject<GameServer[]>; // Connection provided by mocked hubConnectionFor method
 
   beforeEach(async () => {
-    mockedServersListService = new MockedServersListProvider();
     connection = new DeferredCompletionConnection();
     secondConnection = new DeferredCompletionConnection();
 
     // Resets connection URL for each new unit test case
     latestConnectedUrl = undefined;
+
+    // Resets connection used to mock hub behavior
+    hubConnectionStream = new GenericMockedMessagingSubject<GameServer[]>();
 
     // Mocks connection to keep trace of latest required game server URL, then return an accessible mocked connection
     spyOn(SHARED_CONNECTION_FACTORY, 'rptlConnectionFor').and.callFake((serverUrl: string): Subject<string> => {
@@ -67,14 +63,15 @@ describe('ServersListComponent', () => {
       }
     });
 
+    // Mocks hub connection to emulates hub behavior by controlling which servers list is received from it
+    spyOn(SHARED_HUB_CONNECTION_FACTORY, 'hubConnectionFor').and.callFake((): Subject<GameServer[]> => {
+      return hubConnectionStream;
+    });
+
     // Initializes component decorator
     await TestBed.configureTestingModule({
       declarations: [ ServersListComponent ],
       providers: [
-        { // Uses pre-determined servers status
-          provide: ServersListService,
-          useValue: mockedServersListService
-        },
         {
           provide: GameServerResolutionService,
           useValue: {
@@ -89,6 +86,7 @@ describe('ServersListComponent', () => {
     rptlProtocol = TestBed.inject(RptlProtocolService);
     // Gives access to current RpT Minigame type
     minigame = TestBed.inject(MinigameService);
+    // Gives access
 
     // Begins event/binding detection cycle and provides the component from unit test configuration
     fixture = TestBed.createComponent(ServersListComponent);
@@ -96,28 +94,32 @@ describe('ServersListComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create component with updated game servers list and without any selected one', waitForAsync(() => {
+  it('should create component listening for new game server lists and without any selected server', waitForAsync(() => {
     expect(component).toBeTruthy();
 
     // No game server is selected at the beginning of the component lifecycle
     expect(component.selectedServerName).toBeUndefined();
-    // When initialization updating is done, every listed server should be listed by component
-    fixture.whenStable().then(() => expect(component.serversStatus).toEqual(DEFAULT_MOCKED_SERVERS));
+
+    // Will be received from the hub connection
+    const newServersList = [
+      new GameServer('Un', 'a'),
+      new GameServer('Deux', 'c', new Availability(2, 2)),
+      new GameServer('Trois', 'b')
+    ];
+    // Simulates received data from hub
+    hubConnectionStream.receive(newServersList);
+
+    // When initialization updating is done, every server inside the list should be listed by component
+    fixture.whenStable().then(() => expectArrayToBeEqual(component.serversStatus, ...newServersList));
   }));
 
   describe('checkout()', () => {
-    it('should update game servers list with new provided data', waitForAsync(() => {
-      const newStatus: GameServer[] = DEFAULT_MOCKED_SERVERS; // Modified list saved for further assertion
-      // Initializes retrieved data replacement
-      newStatus[1] = new GameServer('Hello world!', 'c');
-      newStatus[5] = new GameServer('Açores #3', 'a', new Availability(2, 2));
+    it('should send a request message to ask hub for an updated servers list', waitForAsync(() => {
+      hubConnectionStream.clear(); // Get rid of data sent during the initialization phase
+      component.checkout();
 
-      // Updates retrieved data
-      mockedServersListService.providedServers[1] = newStatus[1];
-      mockedServersListService.providedServers[5] = newStatus[5];
-
-      component.checkout(); // Updates current list
-      fixture.whenStable().then(() => expect(component.serversStatus).toEqual(newStatus)); // Expects for list to follow changes
+      // Expecting an empty list to have been sent, which will be translated as "REQUEST" by the serializer
+      expectArrayToBeEqual(hubConnectionStream.sentMessagesQueue, []);
     }));
   });
 
