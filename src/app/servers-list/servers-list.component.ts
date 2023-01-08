@@ -151,7 +151,7 @@ export class ServersListComponent implements OnInit, OnDestroy {
       next: (updatedServersStatus: GameServer[]) => this.serversStatus = updatedServersStatus
     });
 
-    this.connectWithHub();
+    // this.connectWithHub();
   }
 
   /**

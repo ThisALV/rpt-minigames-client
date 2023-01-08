@@ -80,7 +80,7 @@ export class ServersListService {
     });
 
     this.hubConnection = connection; // Stores connection, will use it to send request message later
-    this.requestUpdate(); // So we don't need a server update to get a servers list at the beginning
+    // this.requestUpdate(); // So we don't need a server update to get a servers list at the beginning
   }
 
   /**
